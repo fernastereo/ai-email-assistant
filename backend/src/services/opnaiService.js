@@ -5,7 +5,7 @@ const openai = new OpenAI({
 })
 
 class OpenAIService {
-  async generateEmailReply(emialContent, tone = 'formal', customPrompt = '') {
+  async generateEmailReply(emailContent, tone = 'formal', customPrompt = '') {
     const tonePrompts = {
       formal: 'You are a professional email writer. You are given an email and you need to write a reply to it.',
       casual: 'You are a casual email writer. You are given an email and you need to write a reply to it.',

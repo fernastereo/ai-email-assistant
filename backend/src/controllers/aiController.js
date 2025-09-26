@@ -18,7 +18,7 @@ class AIController {
       })
     } catch (error) {
       console.error('Error generating reply:', error)
-      res.status(500).json({ error: 'Failed to generate reply' })
+      res.status(500).json({ error: 'Failed to generate reply. ' + error.message })
     }
   }
 
@@ -30,7 +30,7 @@ class AIController {
         return res.status(400).json({ error: 'Email content is required' })
       }
 
-      const summary = await openaiService.generateEmailReply(emailContent)
+      const summary = await openaiService.summarizeEmail(emailContent)
 
       res.json({
         success: true,
@@ -51,7 +51,7 @@ class AIController {
         return res.status(400).json({ error: 'Email content is required' })
       }
 
-      const analysis = await openaiService.generateEmailReply(emailContent)
+      const analysis = await openaiService.detectSentiment(emailContent)
 
       res.json({
         success: true,
