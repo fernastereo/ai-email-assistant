@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiService from './services/api';
 import ChromeUtils from './utils/chrome';
+import Popup from './components/Popup/Popup';
 
 function App() {
   const [emailContent, setEmailContent] = useState('Hola, espero que estés bien. Quería consultarte sobre el proyecto que discutimos la semana pasada.');
@@ -95,7 +96,7 @@ function App() {
 
   return (
     <div>
-      <h1>AI Email Assistant</h1>
+      <Popup />
     </div>
   );
 }

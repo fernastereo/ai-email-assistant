@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "description": "AI Email Assistant. Sugiere respuestas, resume emails, mejora la redacción y detecta el tono de tus emails.",
   "permissions": [
+    "contextMenus",
+    "tabs",
     "activeTab",
     "storage",
     "scripting",
@@ -17,7 +19,8 @@
     "https://ai-email-assistant.vercel.app/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "static/js/background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
@@ -26,8 +29,9 @@
         "https://outlook.live.com/*", 
         "https://outlook.office.com/*"
       ],
-      "js": ["content-script.js"],
-      "css": ["static/css/content-styles.css"]
+      "js": ["static/js/content-script.js"],
+      "css": ["static/css/content-styles.css"],
+      "type": "module"
     }
   ],
   "action": {
