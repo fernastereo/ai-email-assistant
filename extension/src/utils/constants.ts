@@ -33,6 +33,18 @@ export const EMAIL_TONES = {
     label: 'Persuasivo',
     description: 'Convincente y motivador',
     icon: '🎯'
+  },
+  URGENT: {
+    id: 'urgent',
+    label: 'Urgente',
+    description: 'Urgente y importante',
+    icon: '🔴'
+  },
+  AGGRESSIVE: {
+    id: 'aggressive',
+    label: 'Agresivo',
+    description: 'Agresivo y directo',
+    icon: '💥'
   }
 };
 
