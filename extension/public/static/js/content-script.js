@@ -29,11 +29,6 @@ class EmailAssistantContent {
   }
 
   setup() {
-    // Inyectar botón flotante después de que cargue Gmail
-    setTimeout(() => {
-      this.injectFloatingButton();
-    }, 3000);
-
     // Escuchar mensajes
     this.setupMessageListeners();
   }
@@ -42,6 +37,7 @@ class EmailAssistantContent {
     const hostname = window.location.hostname;
     
     if (hostname.includes('mail.google.com')) {
+      console.log('Gmail detected');
       return {
         id: 'gmail',
         name: 'Gmail',
@@ -81,65 +77,6 @@ class EmailAssistantContent {
     }
     
     return null;
-  }
-
-  injectFloatingButton() {
-    // Verificar si ya existe
-    const existing = document.getElementById('ai-email-assistant-btn');
-    if (existing) {
-      existing.remove();
-    }
-
-    // Crear botón flotante
-    this.floatingButton = document.createElement('div');
-    this.floatingButton.id = 'ai-email-assistant-btn';
-    this.floatingButton.innerHTML = '🤖';
-    this.floatingButton.title = 'AI Email Assistant - Click to open';
-    
-    // Estilos del botón
-    this.floatingButton.style.cssText = `
-      position: fixed !important;
-      top: 20px !important;
-      right: 20px !important;
-      width: 50px !important;
-      height: 50px !important;
-      background: linear-gradient(135deg, #4285F4, #34A853) !important;
-      border-radius: 50% !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      cursor: pointer !important;
-      z-index: 999999 !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      font-size: 20px !important;
-      transition: all 0.3s ease !important;
-      border: none !important;
-      user-select: none !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-    `;
-
-    // Eventos del botón
-    this.floatingButton.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.showPopupHint();
-    });
-
-    this.floatingButton.addEventListener('mouseenter', () => {
-      this.floatingButton.style.transform = 'scale(1.1)';
-      this.floatingButton.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)';
-    });
-
-    this.floatingButton.addEventListener('mouseleave', () => {
-      this.floatingButton.style.transform = 'scale(1)';
-      this.floatingButton.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-    });
-
-    document.body.appendChild(this.floatingButton);
-    console.log('✅ Floating button injected');
-    
-    // Mostrar mensaje temporal
-    this.showTemporaryMessage('🤖 AI Email Assistant ready!');
   }
 
   showPopupHint() {
@@ -391,3 +328,74 @@ try {
 } catch (error) {
   console.error('❌ Error initializing AI Email Assistant:', error);
 }
+
+const waitForElement = (selector, callback) => {
+  const element = document.querySelector(selector);
+  if (element) {
+    callback(element);
+  } else {
+    const observer = new MutationObserver((mutations, obs) => {
+      const element = document.querySelector(selector);
+      if (element) {
+        callback(element);
+        obs.disconnect(); // Detiene la observación una vez encontrado
+      }
+    });
+    observer.observe(document, {
+      childList: true,
+      subtree: true
+    });
+  }
+}
+
+const injectButtonToToolbar = (targetElement) => {
+  // Verificar si ya existe
+  const existing = document.getElementById('ai-email-assistant-btn-toolbar');
+  if (existing) {
+    existing.remove();
+  }
+
+  const container = document.createElement('div');
+  container.className = 'Xa ao4 bSyoAf Xr'
+  container.style.cssText = `
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  `
+
+  const replieIcon = document.createElement('span');
+  replieIcon.innerHTML = '🤖';
+  replieIcon.style.cssText = `
+    padding: 5px 0;
+    font-size: 1.2rem !important;
+    transition: all 0.3s !important;
+  `
+  replieIcon.addEventListener('mouseenter', () => {
+    replieIcon.style.transform = 'scale(1.2)';
+    replieIcon.style.color = 'blue'; // Cambia el color al resaltar
+  });
+  
+  replieIcon.addEventListener('mouseleave', () => {
+    replieIcon.style.transform = 'scale(1)';
+    replieIcon.style.color = 'initial'; // Restablece el color
+  });
+
+  const replieButton = document.createElement('div');
+  replieButton.className = 'apW';
+  replieButton.innerText = 'Replie';
+
+  container.appendChild(replieIcon);
+  container.appendChild(replieButton);
+
+  targetElement.appendChild(container);
+}
+
+window.addEventListener('load', () => {
+  new EmailAssistantContent();
+  waitForElement('.aeN.WR.a6o.anZ.baA.nH.oy8Mbf', (element) => {
+    // Aquí inyectas tu botón o elemento
+    injectButtonToToolbar(element);
+  });
+});
