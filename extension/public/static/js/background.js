@@ -60,6 +60,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       chrome.runtime.openOptionsPage();
       sendResponse({ success: true });
       break;
+    
+    case 'OPEN_SIDE_PANEL':
+      chrome.sidePanel.open({ windowId: sender.tab.windowId });
+      sendResponse({ success: true });
+      return true;
       
     default:
       console.log('Unknown message type:', message.type);

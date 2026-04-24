@@ -389,7 +389,18 @@ const injectButtonToToolbar = (targetElement) => {
   container.appendChild(replieIcon);
   container.appendChild(replieButton);
 
+  container.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleReplyButtonClick();
+  });
+
   targetElement.appendChild(container);
+}
+
+const handleReplyButtonClick = async () => {
+  console.log('🤖 AI Reply button clicked');
+  chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
 }
 
 window.addEventListener('load', () => {

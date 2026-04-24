@@ -1,3 +1,5 @@
+// import ChromeUtils from "@/utils/chrome"
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +16,40 @@ import { useState } from "react";
 
 export const Popup = () => {
   const [selectedTone, setSelectedTone] = useState<string | null>(null);
+
+  // const getCurrentEmailContent = async () => {
+  //   if (ChromeUtils.isExtension()) {
+  //     const tab : chrome.tabs.Tab = await ChromeUtils.getCurrentTab();
+  //     if (tab && (tab.url.includes('mail.google.com') || tab.url.includes('outlook'))) {
+  //       const response = await ChromeUtils.sendMessageToTab(tab.id, {
+  //         type: 'GET_EMAIL_CONTENT'
+  //       });
+        
+  //       if (response.success && response.content) {
+  //         setEmailContent(response.content);
+  //       }
+  //     }
+  //   }
+  // };
+  
+  // const handleInsertReply = async (replyText) => {
+  //   if (ChromeUtils.isExtension()) {
+  //     const tab = await ChromeUtils.getCurrentTab();
+  //     const response = await ChromeUtils.sendMessageToTab(tab.id, {
+  //       type: 'INSERT_REPLY',
+  //       reply: replyText
+  //     });
+      
+  //     if (response.success) {
+  //       window.close(); // Cerrar popup
+  //     }
+  //   }
+  // };
+  
+  // // En useEffect
+  // useEffect(() => {
+  //   getCurrentEmailContent(); // Agregar esta línea
+  // }, []);
 
   const toneOptions = [
     { id: "formal", label: "Formal", icon: "📄" },
