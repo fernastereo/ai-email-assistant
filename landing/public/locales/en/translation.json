@@ -1,0 +1,217 @@
+{
+  "header": {
+    "features": "Features",
+    "how_it_works": "How It Works",
+    "waitlist": "Join the Waitlist"
+  },
+  "hero": {
+    "heading": "Chrome Extension Coming Soon",
+    "title": "Your e-mails sound like a Robot. Let's fix that!",
+    "subtitle": "Reply 10x faster or keep drowning in unread emails. Your funeral. 💀",
+    "cta": "Join Now!!",
+    "cta2": "See Demo",
+    "feature1": "Write passive-aggressive replies even your mother would approve of.",
+    "feature2": "From 'ugh' to 'sent' in 3 seconds",
+    "feature3": "Save 11+ Hours/Week",
+    "early_users": "Join 30+ early users"
+  },
+  "features": {
+    "heading": "Powerful Features for",
+    "heading_span": "Smarter Emails",
+    "subtitle": "Everything you need to transform your email productivity and never struggle with writing responses again",
+    "features": {
+      "smart_reply": {
+        "title": "Smart Reply Generation",
+        "description": "Generate contextual responses instantly with AI that understands tone and intent."
+      },
+      "tone_detection": {
+        "title": "Tone Detection",
+        "description": "Automatically detect if emails are formal, casual, urgent, or positive/negative."
+      },
+      "email_summarization": {
+        "title": "Email Summarization",
+        "description": "Get key points from long emails in 3-5 sentences to save time."
+      },
+      "style_customization": {
+        "title": "Style Customization",
+        "description": "Choose from formal, casual, concise, or persuasive writing styles."
+      },
+      "reply_only_when_needed": {
+        "title": "Replies only when you need them",
+        "description": "No confusing drafts cluttering your inbox. Replie only generates a response when you ask for it."
+      },
+      "one_click_responses": {
+        "title": "One-Click Responses",
+        "description": "Pre-generated quick replies for common email scenarios and questions."
+      }
+    },
+    "footer": "Works seamlessly with Gmail and Outlook"
+  },
+  "how_it_works": {
+    "title": "How It",
+    "heading_span": "Works",
+    "subtitle": "Get started in minutes and transform your email experience forever",
+    "steps": {
+      "1": {
+        "title": "Install Extension",
+        "description": "Add  to Chrome and connect your Gmail or Outlook account"
+      },
+      "2": {
+        "title": "Open Any Email",
+        "description": "Our AI panel appears automatically when you open emails that need responses"
+      },
+      "3": {
+        "title": "Generate & Send",
+        "description": "Choose your preferred tone, generate smart replies, and send with confidence"
+      }
+    },
+    "video": {
+      "title": "See It In Action",
+      "description": "Watch how Replie transforms a complex email into a perfect response",
+      "coming_soon": "Demo Video Coming Soon"
+    }
+  },
+  "differentiation": {
+    "heading": "Designed to assist,",
+    "heading_span": "not overwhelm.",
+    "subtitle": "Some tools auto-generate drafts for every email, even when no reply is needed. That can feel distracting. With Replie, you stay in control. Just click when you want help, and get the perfect response instantly."
+  },
+  "waitlist": {
+    "title": "Join the",
+    "heading_span": "Waitlist",
+    "description": "We are looking for early adopters to join our waitlist.",
+    "card": {
+      "title": "Premium Waitlist",
+      "price": "$1 USD",
+      "description": "Early adopters get these rewards:"
+    },
+    "join": "Join now!",
+    "terms": {
+      "link": "By joining the waitlist, you agree to our terms and conditions.",
+      "dialog_title": "Terms and Conditions",
+      "content": [
+        "1. Elegibility",
+        "By joining the waitlist, you confirm that you are at least 18 years old and have the legal capacity to accept these terms.",
+        "2. Risk free",
+        "The waitlist fee is a fully refundable deposit, write us anytime for a refund.",
+        "3. Communications",
+        "The service is under heavy development. Full terms and conditions, use policy details and feature roadmap will be revealed to waitlist members as they are finalised leading up to our launch.",
+        "4. Payment",
+        "Signing up for the waitlist does not oblige you to make a recurring payment. The waitlist is a one-off payment of 1 american dollar that will credit you with 6 months of usage when the service launches. You can always choose not to enroll for recurring payments when we launch.",
+        "5. Pricing",
+        "Our expected launch price is 10 american dollars per month. This is subject to change.",
+        "If the launch price increases compared to your waitlist deposit: You will still get the month rewards you originally paid for, no additional payment required.",
+        "If the launch price decreases compared to your waitlist deposit: We will top up the bonus months you receive on a pro rata basis.",
+        "In case we don't proceed all deposits will be refunded.",
+        "You can always cancel your waitlist enrollment at any time and your deposit will be refunded."
+      ]
+    },
+    "features": {
+      "1": {
+        "title": "The waitlist deposit covers 1 year of usage",
+        "description": "Be among the first to try our assistant"
+      },
+      "2": {
+        "title": "Refer a friend and get +1 bonus month (unlimited)",
+        "description": "Be among the first to try our assistant"
+      },
+      "3": {
+        "title": "Priority early access",
+        "description": "Be among the first to try our assistant"
+      },
+      "4": {
+        "title": "Lifetime updates included",
+        "description": "Be among the first to try our assistant"
+      },
+      "5": {
+        "title": "Extended AI responses",
+        "description": "Be among the first to try our assistant"
+      },
+      "6": {
+        "title": "Premium support",
+        "description": "Be among the first to try our assistant"
+      },
+      "7": {
+        "title": "Exclusive features",
+        "description": "Be among the first to try our assistant"
+      },
+      "8": {
+        "title": "$10 USD in credits when we launch",
+        "description": "You will receive $10 USD in credits when we launch. This is subject to change."
+      }
+    },
+    "form": {
+      "title": "Enter your information",
+      "name_placeholder": "Your full name",
+      "placeholder": "Your email",
+      "country_placeholder": "Select your country",
+      "referral_placeholder": "Referral email (optional)",
+      "button": "Secure Payment - $1 USD",
+      "loading": "Processing...",
+      "success": "Redirecting to payment",
+      "error": "Invalid email",
+      "description": "You'll be redirected to our secure payment page.",
+      "trusted_by": "Trusted by professionals worldwide"
+    }
+  },
+  "thanks": {
+    "title": "Thank You!",
+    "subtitle": "Your payment has been processed successfully. Welcome to the Replie waitlist!",
+    "payment_details": "Payment Details",
+    "transaction_id": "Transaction ID",
+    "status": "Status",
+    "completed": "Completed",
+    "amount": "Amount",
+    "currency": "Currency",
+    "your_information": "Your Information",
+    "name": "Name",
+    "email": "Email",
+    "country": "Country",
+    "referral": "Referral",
+    "next_steps_title": "What Happens Next?",
+    "steps": {
+      "1": {
+        "title": "Confirmation Email",
+        "description": "You'll receive a confirmation email with your waitlist details and next steps."
+      },
+      "2": {
+        "title": "Early Access",
+        "description": "Get priority access when we launch. We'll notify you as soon as the extension is ready."
+      },
+      "3": {
+        "title": "Exclusive Updates",
+        "description": "Stay updated with exclusive features, tips, and early access to new capabilities."
+      }
+    },
+    "referral_title": "Earn More Rewards",
+    "referral_description": "Refer friends and earn bonus months! Share your unique referral link and get +1 month for each friend who joins.",
+    "share_button": "Share Referral Link",
+    "cta_title": "Stay Connected",
+    "cta_description": "Follow us for updates and join our community of early adopters.",
+    "return_home": "Return Home",
+    "learn_more": "Learn More"
+  },
+  "footer": {
+    "description": "Transform your email productivity with AI-powered smart replies and intelligent suggestions.",
+    "product": {
+      "title": "Product",
+      "features": "Features",
+      "how_it_works": "How It Works",
+      "waitlist": "Waitlist",
+      "demo": "Demo"
+    },
+    "support": {
+      "title": "Support",
+      "help_center": "Help Center",
+      "privacy_policy": "Privacy Policy",
+      "terms_of_service": "Terms of Service",
+      "contact": "Contact"
+    },
+    "connect": {
+      "title": "Connect",
+      "twitter": "Twitter",
+      "github": "GitHub",
+      "message": "Message"
+    }
+  }
+}

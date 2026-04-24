@@ -1,0 +1,218 @@
+{
+  "header": {
+    "features": "Características",
+    "how_it_works": "Cómo Funciona",
+    "waitlist": "Únete a la Lista de Espera"
+  },
+  "hero": {
+    "heading": "Extensión para Chrome pronto disponible",
+    "title": "Tus e-mails suenan como un Robot. Arreglemos eso!",
+    "subtitle": "Responde 10x más rápido o sigue ahogándote en emails sin leer. Tú decides. 💀",
+    "cta": "Únete ya!",
+    "cta2": "Ver demo",
+    "feature1": "Escribe respuestas pasivo-agresivas que hasta tu madre aprobaría",
+    "feature2": "De 'ugh' a 'enviado' en 3 segundos",
+    "feature3": "Ahorra 11+ Horas/Semana",
+    "early_users": "Únete a 30+ usuarios"
+  },
+  "features": {
+    "heading": "Características Poderosas para",
+    "heading_span": "E-mails más Inteligentes",
+    "title": "Características",
+    "subtitle": "Todo lo que necesitas para transformar tu productividad de correo electrónico y nunca más sufrir con la escritura de respuestas",
+    "features": {
+      "smart_reply": {
+        "title": "Generación de Respuestas Inteligentes",
+        "description": "Genera respuestas contextuales instantáneas con IA que entiende el tono y el propósito."
+      },
+      "tone_detection": {
+        "title": "Detección de Tono",
+        "description": "Detecta automáticamente si los correos electrónicos son formales, casuales, urgentes o positivos/negativos."
+      },
+      "email_summarization": {
+        "title": "Resumen de Correos Electrónicos",
+        "description": "Obtén los puntos clave de correos electrónicos largos en 3-5 oraciones para ahorrar tiempo."
+      },
+      "style_customization": {
+        "title": "Personalización de Estilo",
+        "description": "Elige entre estilos de escritura formal, casual, conciso o persuasivo."
+      },
+      "reply_only_when_needed": {
+        "title": "Respuestas solo cuando las necesitas",
+        "description": "No confusos borradores que saturen tu bandeja de entrada. Replie solo genera una respuesta cuando lo pides."
+      },
+      "one_click_responses": {
+        "title": "Respuestas de Un Solo Clic",
+        "description": "Respuestas pregeneradas para escenarios y preguntas comunes de correo electrónico."
+      }
+    },
+    "footer": "Trabaja sin problemas con Gmail y Outlook"
+  },
+  "how_it_works": {
+    "title": "Cómo",
+    "heading_span": "Funciona",
+    "subtitle": "Comienza en minutos y transforma tu experiencia de correo electrónico para siempre",
+    "steps": {
+      "1": {
+        "title": "Instala la Extensión",
+        "description": "Añade Replie a Chrome y conecta tu cuenta de Gmail o Outlook"
+      },
+      "2": {
+        "title": "Abre Cualquier Correo",
+        "description": "Nuestra panel de IA aparece automáticamente cuando abres correos que necesitan respuestas"
+      },
+      "3": {
+        "title": "Genera y Envía",
+        "description": "Elige tu tono preferido, genera respuestas inteligentes y envía con confianza"
+      }
+    },
+    "video": {
+      "title": "Verlo En Acción",
+      "description": "Mira cómo Replie transforma un correo complejo en una respuesta perfecta",
+      "coming_soon": "Demo Video Pronto Disponible"
+    }
+  },
+  "differentiation": {
+    "heading": "Diseñado para ayudar,",
+    "heading_span": "no para abrumar.",
+    "subtitle": "Algunas herramientas generan automáticamente borradores para cada correo, incluso cuando no se necesita respuesta. Eso puede resultar distractor. Con Replie, tú mantienes el control. Simplemente haz clic cuando necesites ayuda y obtén la respuesta perfecta al instante."
+  },
+  "waitlist": {
+    "title": "Únete a la",
+    "heading_span": "Lista de Espera",
+    "description": "Estamos buscando a los primeros usuarios para unirse a nuestra lista de espera.",
+    "join": "Únete ya!",
+    "card": {
+      "title": "Lista de Espera Premium",
+      "price": "$1 USD",
+      "description": "Los primeros usuarios obtienen estos beneficios:"
+    },
+    "terms": {
+      "link": "Al unirte a la lista de espera, aceptas nuestros términos y condiciones.",
+      "dialog_title": "Términos y Condiciones",
+      "content": [
+        "1. Elegibilidad",
+        "Al unirte a la lista de espera, confirmas que tienes al menos 18 años de edad y tienes la capacidad legal para aceptar estos términos.",
+        "2. Sin riesgo",
+        "El depósito de la lista de espera es un depósito reembolsable, escríbenos en cualquier momento para un reembolso.",
+        "3. Comunicaciones",
+        "El servicio está bajo desarrollo intensivo. Todos los términos y condiciones, detalles de la política de uso y el roadmap de características se revelarán a los miembros de la lista de espera a medida que se finalicen y se acerquen a nuestro lanzamiento.",
+        "4. Pago",
+        "Al unirte a la lista de espera no te obliga a hacer un pago recurrente. La lista de espera es un pago único de 1 dolar américano que te acredita con 6 meses de uso cuando se lance el servicio. Puedes siempre elegir no inscribirte para pagos recurrentes cuando se lance.",
+        "5. Precio",
+        "El precio de lanzamiento esperado es de 10 dolares américanos por mes. Esto es sujeto a cambios.",
+        "Si el precio de lanzamiento aumenta comparado con tu depósito de lista de espera: Aún obtendrás las recompensas del mes que originalmente pagaste, no se requiere ningún pago adicional.",
+        "Si el precio de lanzamiento disminuye comparado con tu depósito de lista de espera: Añadiremos los meses de bonificación que recibes en una base proporcional.",
+        "En caso de que no procedamos, todos los depósitos se reembolsarán.",
+        "Puedes siempre cancelar tu inscripción en la lista de espera en cualquier momento y tu depósito se reembolsará."
+      ]
+    },
+    "features": {
+      "1": {
+        "title": "El depósito de la lista de espera cubre 1 año de uso",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "2": {
+        "title": "Refiere a un amigo y obtén +1 mes de bonificación (sin límite)",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "3": {
+        "title": "Acceso Prioritario",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "4": {
+        "title": "Actualizaciones Vitalicias Incluidas",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "5": {
+        "title": "Respuestas de IA extendidas",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "6": {
+        "title": "Soporte Premium",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "7": {
+        "title": "Características Exclusivas",
+        "description": "Sé de los primeros en probar nuestro asistente"
+      },
+      "8": {
+        "title": "$10 USD en créditos cuando lancemos",
+        "description": "Recibirás $10 USD en créditos cuando lancemos. Esto es sujeto a cambios."
+      }
+    },
+    "form": {
+      "title": "Introduce tu información",
+      "name_placeholder": "Tu nombre completo",
+      "placeholder": "Tu correo electrónico",
+      "country_placeholder": "Selecciona tu país",
+      "referral_placeholder": "Correo de referencia (opcional)",
+      "button": "Pago Seguro - $1 USD",
+      "loading": "Procesando...",
+      "success": "Redirigiendo a la página de pago",
+      "error": "Correo electrónico inválido",
+      "description": "Serás redirigido a nuestra página de pago segura.",
+      "trusted_by": "Trusted by professionals worldwide"
+    }
+  },
+  "thanks": {
+    "title": "¡Gracias!",
+    "subtitle": "Tu pago ha sido procesado exitosamente. ¡Bienvenido a la lista de espera de Replie!",
+    "payment_details": "Detalles del Pago",
+    "transaction_id": "ID de Transacción",
+    "status": "Estado",
+    "completed": "Completado",
+    "amount": "Cantidad",
+    "currency": "Moneda",
+    "your_information": "Tu Información",
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "country": "País",
+    "referral": "Referencia",
+    "next_steps_title": "¿Qué Sigue Ahora?",
+    "steps": {
+      "1": {
+        "title": "Correo de Confirmación",
+        "description": "Recibirás un correo de confirmación con los detalles de tu lista de espera y próximos pasos."
+      },
+      "2": {
+        "title": "Acceso Prioritario",
+        "description": "Obtén acceso prioritario cuando lancemos. Te notificaremos tan pronto como la extensión esté lista."
+      },
+      "3": {
+        "title": "Actualizaciones Exclusivas",
+        "description": "Mantente actualizado con características exclusivas, consejos y acceso temprano a nuevas capacidades."
+      }
+    },
+    "referral_title": "Gana Más Recompensas",
+    "referral_description": "¡Refiere amigos y gana meses de bonificación! Comparte tu enlace de referencia único y obtén +1 mes por cada amigo que se una.",
+    "share_button": "Compartir Enlace de Referencia",
+    "cta_title": "Mantente Conectado",
+    "cta_description": "Síguenos para actualizaciones y únete a nuestra comunidad de primeros usuarios.",
+    "return_home": "Volver al Inicio",
+    "learn_more": "Saber Más"
+  },
+  "footer": {
+    "description": "Transforma tu productividad de correo electrónico con IA-powered respuestas y sugerencias inteligentes.",
+    "product": {
+      "title": "Producto",
+      "features": "Características",
+      "how_it_works": "Cómo Funciona",
+      "waitlist": "Lista de Espera",
+      "demo": "Demo"
+    },
+    "support": {
+      "title": "Soporte",
+      "help_center": "Centro de Ayuda",
+      "privacy_policy": "Política de Privacidad",
+      "terms_of_service": "Términos de Servicio",
+      "contact": "Contacto"
+    },
+    "connect": {
+      "title": "Conectar",
+      "twitter": "Twitter",
+      "github": "GitHub",
+      "message": "Mensaje"
+    }
+  }
+}
