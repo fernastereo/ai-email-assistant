@@ -1,0 +1,14 @@
+services:
+  api:
+    build: .
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    # Hot-reload in development: mount source, override CMD
+    volumes:
+      - ./src:/app/src
+      - ./server.js:/app/server.js
+    command: npx nodemon server.js

@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const compression = require('compression')
 require('dotenv').config()
 
 const aiRoutes = require('./routes/ai')
@@ -9,7 +10,8 @@ const aiRoutes = require('./routes/ai')
 const app = express()
 
 app.use(helmet())
-app.use(morgan('combined'))
+app.use(compression())
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
