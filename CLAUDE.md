@@ -57,7 +57,7 @@ ai-email-assistant/
         ├── controllers/
         │   └── aiController.js            # Request handlers
         ├── services/
-        │   └── opnaiService.js            # OpenAI SDK integration (note: typo in filename)
+        │   └── openaiService.js            # OpenAI SDK integration (note: typo in filename)
         ├── middlewares/
         │   └── auth.js                    # EMPTY — not implemented yet
         └── utils/
@@ -380,7 +380,7 @@ npm run docker:dev   # docker compose up (hot-reload)
 **Model:** `gpt-3.5-turbo`
 **Temperature:** `0.7`
 **Max tokens:** `500`
-**File:** `backend/src/services/opnaiService.js` (note: typo in filename — `opnai`, not `openai`)
+**File:** `backend/src/services/openaiService.js`
 
 ### System Prompt Strategy
 - Language: responds in same language as the email
@@ -428,7 +428,7 @@ Manifest and background.js reference `/icons/icon48.png` but the `/icons/` direc
 `backend/src/middlewares/auth.js` and `backend/src/utils/reteLimiter.js` — both 0 bytes.
 
 ### 9. detectSentiment returns raw string, not parsed JSON
-`backend/src/services/opnaiService.js` returns `completion.choices[0].message.content` directly. Client needs to `JSON.parse()` it — no validation if OpenAI returns malformed JSON.
+`backend/src/services/openaiService.js` returns `completion.choices[0].message.content` directly. Client needs to `JSON.parse()` it — no validation if OpenAI returns malformed JSON.
 
 ### 10. Usage tracking fires before API call succeeds
 In `background.js`, `trackUsage()` is called before the API response — if the call fails, the usage is still counted.
@@ -438,7 +438,6 @@ In `background.js`, `trackUsage()` is called before the API response — if the 
 ## TECHNICAL DEBT
 
 ```
-opnaiService.js        ← typo in filename (opnai vs openai)
 content-script.js:387  ← 'Replie' instead of 'Reply'
 sidebar.tsx            ← commented-out imports, dead code
 popup.tsx              ← all handlers commented out
@@ -471,7 +470,7 @@ No tests               ← jest configured but 0 test files exist
 |---|------|-------|
 | 9 | Options/settings page | `options.html` + chrome.storage wiring |
 | 10 | Server-side rate limiting | `express-rate-limit` in backend |
-| 11 | Parse + validate detectSentiment JSON response | `opnaiService.js` + controller |
+| 11 | Parse + validate detectSentiment JSON response | `openaiService.js` + controller |
 | 12 | Error boundaries in React | Prevent full crash on JS error |
 | 13 | Retry logic in ApiService | Currently fails on first error |
 | 14 | Fix MutationObserver memory leak | `content-script.js` |
@@ -556,13 +555,12 @@ Break-even at $8/mo:   ~8 paying users
 1. **Sidebar uses hardcoded mock data** — not wired to real backend
 2. **DOM selector fragility** — Gmail/Outlook selectors break on UI updates
 3. **No server-side rate limiting** — daily limit is soft, client-side only
-4. **Typo in service filename** — `opnaiService.js` (should be `openaiService.js`)
-5. **CORS set to `*` by default** — must restrict to extension origin in production
-6. **No user authentication** — extension is anonymous
-7. **Popup buttons non-functional** — all handlers commented out
-8. **sidepanel.html broken** — points to .tsx source file
-9. **No extension icons** — directory missing entirely
-10. **detectSentiment not JSON-parsed** — raw string returned to client
+4. **CORS set to `*` by default** — must restrict to extension origin in production
+5. **No user authentication** — extension is anonymous
+6. **Popup buttons non-functional** — all handlers commented out
+7. **sidepanel.html broken** — points to .tsx source file
+8. **No extension icons** — directory missing entirely
+9. **detectSentiment not JSON-parsed** — raw string returned to client
 
 ---
 

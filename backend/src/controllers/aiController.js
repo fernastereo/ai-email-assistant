@@ -1,4 +1,4 @@
-const openaiService = require('../services/opnaiService')
+const openaiService = require('../services/openaiService')
 
 class AIController {
   async generateReply(req, res) {

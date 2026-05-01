@@ -158,7 +158,7 @@ async function handleGenerateReply(data) {
       return { success: false, error: 'Daily limit exceeded (50 requests)' };
     }
     
-    const result = await makeAPIRequest('/ai/generate-reply', data);
+    const result = await makeAPIRequest('/api/ai/generate-reply', data);
     return { success: true, ...result };
     
   } catch (error) {
@@ -174,7 +174,7 @@ async function handleSummarizeEmail(data) {
       return { success: false, error: 'Daily limit exceeded' };
     }
     
-    const result = await makeAPIRequest('/ai/summarize', data);
+    const result = await makeAPIRequest('/api/ai/summarize-email', data);
     return { success: true, ...result };
     
   } catch (error) {
@@ -190,7 +190,7 @@ async function handleAnalyzeSentiment(data) {
       return { success: false, error: 'Daily limit exceeded' };
     }
     
-    const result = await makeAPIRequest('/ai/analyze-sentiment', data);
+    const result = await makeAPIRequest('/api/ai/detect-sentiment', data);
     return { success: true, ...result };
     
   } catch (error) {
