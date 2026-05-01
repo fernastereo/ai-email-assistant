@@ -5,11 +5,14 @@ on:
     branches: [master]
     paths:
       - 'backend/**'
+      - '.github/workflows/backend.yml'
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened, closed]
     paths:
       - 'backend/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:  # permite dispararlo manualmente desde GitHub Actions
 
 env:
   REGISTRY: ghcr.io
