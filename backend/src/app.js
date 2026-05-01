@@ -22,7 +22,7 @@ app.use(cors({
 app.use('/api/ai', aiRoutes)
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() })
+  res.json({ status: 'OK', 'message': 'API is running', timestamp: new Date().toISOString() })
 })
 
 // Root route
