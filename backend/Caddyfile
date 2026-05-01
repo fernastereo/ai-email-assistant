@@ -1,0 +1,3 @@
+api.replie.email {
+    reverse_proxy api:3001
+}
