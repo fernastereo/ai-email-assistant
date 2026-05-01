@@ -1,0 +1,140 @@
+name: 🚀 Backend — Build & Deploy
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'backend/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/replie-api
+
+jobs:
+  # ── Validación en PRs abiertos ────────────────────────────────
+  validate:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    name: 🔍 Validate
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 📋 Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: 🏗️ Verify app starts
+        working-directory: backend
+        run: node -e "require('./src/app'); console.log('App OK')"
+        env:
+          OPENAI_API_KEY: dummy-key-for-validation
+
+  # ── Build y push de la imagen Docker ─────────────────────────
+  build:
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    name: 🐳 Build & Push Image
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔑 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: 🏗️ Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Deploy al Droplet via SSH ─────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy to Droplet
+
+    steps:
+      - name: 📂 Copy compose files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: deploy
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          source: "backend/docker-compose.prod.yml,backend/Caddyfile"
+          target: /opt/replie/
+          strip_components: 1
+
+      - name: 🚀 Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: deploy
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            # Login al registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Bajar nueva imagen del api (solo api, db y caddy no se tocan)
+            docker compose -f /opt/replie/docker-compose.prod.yml pull api
+
+            # Reiniciar solo el contenedor del api
+            docker compose -f /opt/replie/docker-compose.prod.yml up -d --no-deps api
+
+            # Verificar que quedó corriendo
+            sleep 5
+            docker compose -f /opt/replie/docker-compose.prod.yml ps
+
+            # Limpiar imágenes viejas
+            docker image prune -f
+
+      - name: ✅ Verify health
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DO_DROPLET_IP }}
+          username: deploy
+          key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+          script: |
+            curl -f http://localhost:3001/health || exit 1
+            echo "✅ API healthy"
+
+      - name: ✅ Done
+        run: |
+          echo "🎉 Deployed successfully"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "🕐 $(date)"
