@@ -46,7 +46,7 @@ export const HeroSection = () => {
           {/* Badge */}
           <div className='inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium animate-pulse-glow'>
             <Sparkles className='w-4 h-4' />
-            {t('hero.heading')}
+            {t('hero.heading')} coming soon
           </div>
 
           {/* Headline */}
