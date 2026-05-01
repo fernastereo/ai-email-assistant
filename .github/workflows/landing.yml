@@ -1,0 +1,107 @@
+name: 🌐 Landing — Deploy to Production
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'landing/**'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'landing/**'
+
+defaults:
+  run:
+    working-directory: landing
+
+jobs:
+  # ── Validación en PRs abiertos ────────────────────────────────
+  validate:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    name: 🔍 Validate
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: landing/package-lock.json
+
+      - name: 📋 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint
+        run: npm run lint
+
+      - name: 🏗️ Test build
+        run: npm run build
+        env:
+          VITE_APP_FIREBASE_API_KEY: ${{ secrets.LANDING_FIREBASE_API_KEY }}
+          VITE_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.LANDING_FIREBASE_AUTH_DOMAIN }}
+          VITE_APP_FIREBASE_PROJECT_ID: ${{ secrets.LANDING_FIREBASE_PROJECT_ID }}
+          VITE_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.LANDING_FIREBASE_STORAGE_BUCKET }}
+          VITE_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.LANDING_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_APP_FIREBASE_APP_ID: ${{ secrets.LANDING_FIREBASE_APP_ID }}
+          VITE_APP_MEASUREMENT_ID: ${{ secrets.LANDING_MEASUREMENT_ID }}
+          VITE_APP_ENV: production
+
+  # ── Deploy en push a master o PR mergeado ────────────────────
+  deploy:
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    name: 🚀 Deploy
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: landing/package-lock.json
+
+      - name: 📋 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build for production
+        run: npm run build
+        env:
+          VITE_APP_FIREBASE_API_KEY: ${{ secrets.LANDING_FIREBASE_API_KEY }}
+          VITE_APP_FIREBASE_AUTH_DOMAIN: ${{ secrets.LANDING_FIREBASE_AUTH_DOMAIN }}
+          VITE_APP_FIREBASE_PROJECT_ID: ${{ secrets.LANDING_FIREBASE_PROJECT_ID }}
+          VITE_APP_FIREBASE_STORAGE_BUCKET: ${{ secrets.LANDING_FIREBASE_STORAGE_BUCKET }}
+          VITE_APP_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.LANDING_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_APP_FIREBASE_APP_ID: ${{ secrets.LANDING_FIREBASE_APP_ID }}
+          VITE_APP_MEASUREMENT_ID: ${{ secrets.LANDING_MEASUREMENT_ID }}
+          VITE_APP_ENV: production
+
+      - name: 🚀 Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.LANDING_FTP_HOST }}
+          username: ${{ secrets.LANDING_FTP_USERNAME }}
+          password: ${{ secrets.LANDING_FTP_PASSWORD }}
+          local-dir: ./landing/dist/
+          server-dir: /replie.email/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env
+
+      - name: ✅ Done
+        run: |
+          echo "🎉 Deployed successfully"
+          echo "🌐 https://replie.email"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "🕐 $(date)"
