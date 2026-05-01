@@ -129,10 +129,10 @@ jobs:
             echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
 
             # Bajar nueva imagen del api (solo api, db y caddy no se tocan)
-            docker compose -f /opt/replie/docker-compose.prod.yml pull api
+            docker compose -f /opt/replie/docker-compose.prod.yml --env-file /opt/replie/.env pull api
 
             # Reiniciar solo el contenedor del api
-            docker compose -f /opt/replie/docker-compose.prod.yml up -d --no-deps api
+            docker compose -f /opt/replie/docker-compose.prod.yml --env-file /opt/replie/.env up -d --no-deps api
 
             # Verificar que quedó corriendo
             sleep 5
@@ -148,7 +148,7 @@ jobs:
           username: deploy
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
-            docker compose -f /opt/replie/docker-compose.prod.yml exec -T api wget -qO- http://localhost:3001/health || exit 1
+            docker compose -f /opt/replie/docker-compose.prod.yml --env-file /opt/replie/.env exec -T api wget -qO- http://localhost:3001/health || exit 1
             echo "✅ API healthy"
 
       - name: ✅ Done
