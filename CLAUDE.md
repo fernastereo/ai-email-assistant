@@ -2,9 +2,11 @@
 
 ## Project Overview
 
+**Product name: Replie**
+
 Chrome Extension (Manifest V3) that integrates AI into Gmail and Outlook to provide smart reply generation, email summarization, and sentiment analysis. Powered by OpenAI's GPT-3.5-turbo via a Node.js/Express backend.
 
-**Current status (2026-04-25):** Backend is Dockerized and ready for deploy. Extension frontend is mostly UI-only — core functionality not yet wired to real API. Active development phase.
+**Current status (2026-05-01):** Backend is Dockerized and ready for deploy. Extension frontend is mostly UI-only — core functionality not yet wired to real API. Landing page exists at `/landing` and is the primary customer acquisition channel. Active development phase.
 
 ---
 
@@ -12,6 +14,7 @@ Chrome Extension (Manifest V3) that integrates AI into Gmail and Outlook to prov
 
 ```
 ai-email-assistant/
+├── landing/            # Landing page / marketing site (React + Firebase)
 ├── extension/          # Chrome extension (React + TypeScript + Vite)
 │   ├── public/
 │   │   ├── manifest.json                  # Extension manifest (MV3)
@@ -570,3 +573,127 @@ Break-even at $8/mo:   ~8 paying users
 - OpenAI prompts instruct the model to respond in the same language as the email
 - Labels in sidebar: "ACCIONES DE IA", "RESPUESTA GENERADA", "EMAIL ANALIZADO"
 - Error/success messages defined in `constants.ts → MESSAGES`
+
+---
+
+## Landing Page (Replie Marketing Site)
+
+> Full analysis: `docs/landing-page-analysis.md`
+
+**Location:** `/landing`
+**Domain:** `replie.email`
+**Deploy:** GitHub Actions → FTP (see `.github/workflows/deploy.yml`)
+
+### Stack
+React 18 + TypeScript + Vite + Tailwind + shadcn/ui + Firebase (Firestore + Analytics) + i18next (EN/ES/DE-incomplete) + React Hook Form + Zod
+
+### Purpose
+Primary customer acquisition channel. Captures early adopters via waitlist with $1 USD deposit. Will evolve into full signup/payment/account management site.
+
+### Sections
+1. Header — nav, language selector (EN/ES), CTA
+2. Hero — headline, CTAs, "30+ early users" social proof
+3. Features — 6 feature cards
+4. How It Works — 3 steps + demo video (language-aware: en/es)
+5. Differentiation — value prop headline
+6. Waitlist — signup form + pricing card ($1 USD deposit)
+7. Footer — links, social, legal
+8. `/thanks` — post-signup confirmation + referral CTA
+
+### Waitlist & Payment Flow
+```
+Form (name + email) → Firestore (collection: waitlist)
+→ PayPal payment ($1 USD) → PayerID in URL query params
+→ /thanks page → updates Firestore with payment details
+```
+
+### Firestore Schema (collection: `waitlist`)
+```javascript
+{
+  name, email,
+  paymentStatus: 'pending' | 'completed',
+  payerId, transactionId, amount: '1.00', currency: 'USD',
+  createdAt, updatedAt
+}
+```
+
+### Firebase Analytics Events
+```
+click_on_header_join_waitlist
+click_on_hero_join_waitlist
+click_on_hero_demo
+click_join_waitlist
+```
+Only fires when `VITE_APP_ENV=production`.
+
+### CRITICAL SECURITY ISSUES — Landing
+
+1. **Firebase API key committed to `.env`** — rotate immediately in Firebase Console
+2. **Firestore security rules unknown** — if open (dev default), anyone can read all waitlist data and payment info
+3. **No GDPR/cookie consent** — collecting name + email + payment data without explicit consent; legal risk for EU/CA users
+4. **PayerID in URL query string** — stays in browser history and server logs
+
+### Known Bugs
+- `TOAST_REMOVE_DELAY = 1000000` (~16 min) — should be ~5000ms
+- `lang="en"` in HTML never updates when user switches language
+- "Join 30+ early users" is static hardcoded text
+
+### Broken Links (all `href="#"`)
+- Footer: Twitter, GitHub, Help Center, Demo, Cookies
+- `og:image` points to `lovable.dev` domain (external, fragile)
+- `twitter:site` shows `@lovable_dev` instead of product account
+- Support email `support@replie.email` domain status unverified
+
+### Missing for Real Conversion
+- Email service provider (Resend recommended) — confirmation emails not implemented
+- Customer testimonials / social proof
+- FAQ section
+- Cookie consent banner
+- Sitemap.xml + schema.org markup
+- `hreflang` tags for multi-language SEO
+- German translation is incomplete (only basic structure)
+- Help Center page (mentioned in footer, doesn't exist)
+
+### Landing Improvement Plan (ordered by priority)
+
+**Immediate (before real traffic):**
+1. Rotate Firebase API key
+2. Set Firestore security rules (write-only from client, read only from backend)
+3. Integrate email service — Resend (free up to 3k/month) for transactional emails
+4. Add GDPR cookie consent banner
+5. Fix broken footer links
+6. Fix `TOAST_REMOVE_DELAY` bug
+
+**High priority (week 1):**
+7. Make "early users" count dynamic from Firestore
+8. Add FAQ section with top 5 objections
+9. Replace `og:image` with own hosted image
+10. Fix `twitter:site` to product account
+11. Update `lang` attribute dynamically on language switch
+12. Complete German translation or remove from selector
+
+**Conversion (week 2):**
+13. Add testimonials section (even from beta users)
+14. Add competitor comparison ("Why Replie vs Compose AI / ChatGPT")
+15. Make refund guarantee more prominent
+16. Add sitemap.xml + schema.org SoftwareApplication markup
+17. Create basic Help Center page
+
+**Medium term:**
+18. Email nurturing sequence for waitlist (Resend + templates)
+19. Functional referral system (real mechanism, not just text)
+20. A/B test hero headline copy
+21. Heatmap tracking (Hotjar or Microsoft Clarity — both free)
+22. About / Team page for credibility
+
+### Landing Environment Variables
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_FIREBASE_MEASUREMENT_ID=...
+VITE_APP_ENV=production
+```
