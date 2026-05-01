@@ -148,7 +148,7 @@ jobs:
           username: deploy
           key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
           script: |
-            curl -f http://localhost:3001/health || exit 1
+            docker compose -f /opt/replie/docker-compose.prod.yml exec -T api wget -qO- http://localhost:3001/health || exit 1
             echo "✅ API healthy"
 
       - name: ✅ Done
