@@ -10,7 +10,7 @@ class AIController {
       }
 
       const reply = await openaiService.generateEmailReply(emailContent, tone, customPrompt)
-
+      // const reply = "Hello John,\n\nThank you for your email. I will review the proposal and get back to you shortly.\n\nBest regards,\n\n[Your Name]"
       res.json({
         success: true,
         reply,

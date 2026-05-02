@@ -6,7 +6,7 @@
 
 Chrome Extension (Manifest V3) that integrates AI into Gmail and Outlook to provide smart reply generation, email summarization, and sentiment analysis. Powered by OpenAI's GPT-3.5-turbo via a Node.js/Express backend.
 
-**Current status (2026-05-02):** Backend deployed and live at `api.replie.email`. Extension core flow (generate reply, summarize, insert) wired to real API. UX redesign in progress: moving from sidepanel-based flow to inline compose toolbar injection. Landing page exists at `/landing` and is the primary customer acquisition channel.
+**Current status (2026-05-02):** Backend deployed and live at `api.replie.email`. Extension primary UX implemented: inline toolbar injected below each email body in Gmail (one per message, works for plain text and HTML emails, handles threads correctly). Popup redesigned as settings/usage dashboard. Sidepanel removed entirely. Landing page exists at `/landing` and is the primary customer acquisition channel.
 
 ---
 
@@ -23,12 +23,9 @@ ai-email-assistant/
 │   │       └── content-script.js         # Content script (raw JS)
 │   ├── src/
 │   │   ├── main.tsx                       # Popup entry point
-│   │   ├── sidebar.tsx                    # Sidebar entry point
 │   │   ├── App.tsx                        # Root popup component
 │   │   ├── components/
-│   │   │   ├── popup.tsx                  # Popup UI
-│   │   │   ├── sidebar/
-│   │   │   │   └── sidebar.tsx            # Sidebar UI
+│   │   │   ├── popup.tsx                  # Settings & usage dashboard
 │   │   │   └── ui/                        # shadcn/Radix UI components
 │   │   │       ├── button.tsx
 │   │   │       ├── card.tsx
@@ -45,8 +42,7 @@ ai-email-assistant/
 │   │   └── lib/
 │   │       └── utils.ts                   # cn() helper (clsx + tailwind-merge)
 │   ├── index.html                         # Popup HTML entry
-│   ├── sidepanel.html                     # Sidebar HTML entry
-│   └── vite.config.ts                     # Multi-entry Vite build config
+│   └── vite.config.ts                     # Vite build config
 │
 └── backend/
     ├── Dockerfile                         # Multi-stage production image
@@ -117,12 +113,13 @@ ai-email-assistant/
 | Popup (Chrome toolbar icon) | Settings + usage dashboard | Available everywhere, not tied to Gmail. Will hold login/account when auth is added. |
 | Sidepanel | Secondary — advanced features | Thread analysis, reply history, templates (Phase 4). Too much friction for the core generate-reply flow. |
 
-**Inline toolbar UX spec:**
-- Appears automatically when Gmail/Outlook compose box opens (detected via MutationObserver)
-- Contains: tone selector (dropdown) + "Generate with Replie" button + loading state
-- On generate: calls `GENERATE_REPLY` via `chrome.runtime.sendMessage` → background → API
-- On response: injects text directly into compose box (no intermediate copy step)
-- Styling: minimal, matches Gmail's toolbar aesthetic, Replie branding via small logo/text
+**Inline toolbar UX spec (✅ implemented):**
+- Appears automatically below each expanded email body in Gmail (detected via MutationObserver on `.ii.gt`)
+- One toolbar per `[data-message-id]` container — handles threads (N emails = N toolbars) and HTML emails correctly
+- Contains: "✨ Replie" brand label + tone selector (persisted) + "↩ Generar respuesta" + "📄 Resumir"
+- Generate Reply: auto-clicks Gmail's Reply button + calls API in parallel → injects text into compose box when both are ready; fallback shows text inline if compose doesn't open
+- Summarize: calls API → shows result in expandable area below toolbar
+- Tone selector change persists to `chrome.storage.local → settings.defaultTone`
 
 ---
 
@@ -446,21 +443,18 @@ Manifest references `/icons/icon48.png` but the `/icons/` directory doesn't exis
 ### 9. detectSentiment returns raw string, not parsed JSON
 `backend/src/services/openaiService.js` returns `completion.choices[0].message.content` directly. Client does `JSON.parse()` with a try/catch but no server-side validation if OpenAI returns malformed JSON.
 
-### 10. Inline compose toolbar not yet implemented
-Primary UX flow (inject toolbar into Gmail compose box) is not built yet. Currently the only entry point to AI features is via the 🤖 sidebar button or the popup. See Work Plan Phase 1 new items.
+### 10. ✅ FIXED — Inline email toolbar implemented and working
 
 ---
 
 ## TECHNICAL DEBT
 
 ```
-popup.tsx              ← currently an action launcher; needs to be redesigned as settings/dashboard
-sidebar.tsx            ← primary action flow will move to inline toolbar; sidebar becomes secondary
-background.js          ← OPEN_SIDE_PANEL handler assumes sender.tab exists (crashes if called from popup)
-content-script.js      ← MutationObserver never disconnects (memory leak)
-content-script.js      ← DOM selectors hardcoded, break on Gmail/Outlook updates
+content-script.js      ← emailObserver (MutationObserver) never disconnects (memory leak)
+content-script.js      ← .ii.gt selector is Gmail-specific; Outlook not yet supported
+content-script.js      ← reply button selector uses aria-label with Spanish strings only
+background.js          ← daily limit enforced at 50 but UI shows 20; needs alignment
 No tests               ← jest configured but 0 test files exist
-Daily limit            ← sidebar shows 20/day cap but background.js enforces 50; inconsistent
 ```
 
 ---
@@ -486,15 +480,16 @@ Daily limit            ← sidebar shows 20/day cap but background.js enforces 5
 | # | Status | Task | File(s) |
 |---|--------|------|---------|
 | 1 | ✅ | Fix API endpoint paths in background.js | `background.js` |
-| 2 | ✅ | Wire sidebar to real API | `sidebar/sidebar.tsx` |
-| 3 | ✅ | Implement Copy + Insert in sidebar | `sidebar/sidebar.tsx` |
-| 4 | ⬜ | Detect compose box open in Gmail (MutationObserver) | `content-script.js` |
-| 5 | ⬜ | Inject Replie toolbar into compose box (tone selector + Generate button) | `content-script.js` |
-| 6 | ⬜ | Call GENERATE_REPLY from inline toolbar, inject result into compose box | `content-script.js` + `background.js` |
-| 7 | ⬜ | Redesign popup as settings/usage dashboard | `popup.tsx` |
-| 8 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
-| 9 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
-| 10 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
+| 2 | ✅ | Remove sidepanel entirely | `manifest.json`, `vite.config.ts`, `background.js` |
+| 3 | ✅ | Inline toolbar: detect email body via MutationObserver on `.ii.gt` | `content-script.js` |
+| 4 | ✅ | Inline toolbar: one toolbar per `[data-message-id]` (threads + HTML emails) | `content-script.js` |
+| 5 | ✅ | Inline toolbar: Generate Reply (opens compose + injects text) | `content-script.js` |
+| 6 | ✅ | Inline toolbar: Summarize (shows result below toolbar) | `content-script.js` |
+| 7 | ✅ | Inline toolbar: tone selector persists via chrome.storage.local | `content-script.js` |
+| 8 | ✅ | Redesign popup as settings/usage dashboard | `popup.tsx` |
+| 9 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
+| 10 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
+| 11 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
 
 ### Phase 2 — Make it work well
 
@@ -597,14 +592,15 @@ Break-even at $8/mo:   ~8 paying users
 
 ## Known Issues & Technical Debt Summary
 
-1. **Inline compose toolbar not built** — primary UX flow still pending (Phase 1 items 4-6)
-2. **Popup needs redesign** — currently an action launcher, should be settings/dashboard
-3. **DOM selector fragility** — Gmail/Outlook selectors break on UI updates
-4. **No server-side rate limiting** — daily limit is soft, client-side only
-5. **CORS set to `*` by default** — must restrict to extension origin in production
-6. **No user authentication** — extension is anonymous
-7. **No extension icons** — directory missing entirely
-8. **detectSentiment not validated server-side** — OpenAI may return malformed JSON
+1. **Gmail-only** — `.ii.gt` selector is Gmail-specific; Outlook not yet supported
+2. **Reply button selector** — uses Spanish aria-labels (`Responder`); may miss English Gmail
+3. **Daily limit inconsistency** — UI shows 20/day, background.js enforces 50
+4. **MutationObserver leak** — `emailObserver` never disconnects
+5. **No server-side rate limiting** — daily limit is soft, client-side only
+6. **CORS set to `*` by default** — must restrict to extension origin in production
+7. **No user authentication** — extension is anonymous
+8. **No extension icons** — directory missing entirely
+9. **detectSentiment not validated server-side** — OpenAI may return malformed JSON
 
 ---
 

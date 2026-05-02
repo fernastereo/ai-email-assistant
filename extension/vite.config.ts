@@ -10,11 +10,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        // Popup principal
         main: resolve(__dirname, 'index.html'),
-        // Sidebar
-        sidebar: resolve(__dirname, 'sidepanel.html'),
-        // Puedes agregar más entry points
         // options: resolve(__dirname, 'options.html'),
       },
       output: {
