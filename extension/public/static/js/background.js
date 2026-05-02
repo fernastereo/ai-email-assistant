@@ -75,7 +75,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case 'OPEN_SIDE_PANEL':
       chrome.sidePanel.open({ windowId: sender.tab.windowId });
       sendResponse({ success: true });
-      return true;
+      break;
       
     default:
       console.log('Unknown message type:', message.type);
@@ -234,6 +234,25 @@ async function insertReplyInTab(data) {
     return { success: false, error: error.message };
   }
 }
+
+// Habilitar el sidepanel en pestañas de Gmail/Outlook (al activar o navegar)
+function updateSidePanelForTab(tabId, url) {
+  if (!url) return;
+  const isEmailTab = url.includes('mail.google.com') ||
+                     url.includes('outlook.live.com') ||
+                     url.includes('outlook.office.com');
+  chrome.sidePanel.setOptions({ tabId, enabled: isEmailTab });
+}
+
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  chrome.tabs.get(tabId, (tab) => updateSidePanelForTab(tabId, tab.url));
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    updateSidePanelForTab(tabId, tab.url);
+  }
+});
 
 // Context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {

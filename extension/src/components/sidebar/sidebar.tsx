@@ -47,11 +47,33 @@ function Sidebar() {
   const [usage, setUsage] = useState<UsageData>({ requestsToday: 0, lastReset: '' });
   const DAILY_LIMIT = 20;
 
-  // Al montar: obtener email y usage
+  // Al montar: obtener email, usage y ejecutar acción pendiente del popup
   useEffect(() => {
     fetchEmailContent();
     fetchUsage();
+    checkPendingAction();
   }, []);
+
+  const checkPendingAction = () => {
+    chrome.storage.local.get(['pendingAction'], (result) => {
+      if (!result.pendingAction) return;
+      const { action, tone } = result.pendingAction as { action: string; tone: string };
+      chrome.storage.local.remove('pendingAction');
+      // Obtener el email fresco y ejecutar la acción
+      chrome.runtime.sendMessage({ type: 'GET_EMAIL_CONTENT' }, (response) => {
+        if (!response?.success || !response.content) return;
+        const content = response.content;
+        setEmailContent(content);
+        if (action === 'GENERATE_REPLY') {
+          const resolvedTone = tone || 'formal';
+          setSelectedTone(resolvedTone);
+          executeGenerateReply(content, resolvedTone);
+        } else if (action === 'SUMMARIZE_EMAIL') {
+          executeSummarize(content);
+        }
+      });
+    });
+  };
 
   const fetchEmailContent = () => {
     chrome.runtime.sendMessage({ type: 'GET_EMAIL_CONTENT' }, (response) => {
@@ -71,17 +93,13 @@ function Sidebar() {
     });
   };
 
-  const handleGenerateResponse = async () => {
-    if (!emailContent) {
-      setError('No se detectó contenido de email. Abre un email primero.');
-      return;
-    }
+  const executeGenerateReply = (content: string, tone: string) => {
     setError('');
     setIsGenerating(true);
     chrome.runtime.sendMessage(
       {
         type: 'GENERATE_REPLY',
-        data: { emailContent, tone: selectedTone, customPrompt: customPrompt || undefined }
+        data: { emailContent: content, tone, customPrompt: customPrompt || undefined }
       },
       (response) => {
         setIsGenerating(false);
@@ -95,30 +113,22 @@ function Sidebar() {
     );
   };
 
-  const handleSummarize = () => {
-    if (!emailContent) {
-      setError('No se detectó contenido de email. Abre un email primero.');
-      return;
-    }
+  const executeSummarize = (content: string) => {
     setError('');
     setIsSummarizing(true);
     chrome.runtime.sendMessage(
-      { type: 'SUMMARIZE_EMAIL', data: { emailContent } },
+      { type: 'SUMMARIZE_EMAIL', data: { emailContent: content } },
       (response) => {
         setIsSummarizing(false);
         if (response?.success && response.summary) {
           setEmailSummary(response.summary);
-          // Analizar sentimiento en paralelo
           chrome.runtime.sendMessage(
-            { type: 'ANALYZE_SENTIMENT', data: { emailContent } },
+            { type: 'ANALYZE_SENTIMENT', data: { emailContent: content } },
             (sentimentResponse) => {
               if (sentimentResponse?.success && sentimentResponse.analysis) {
                 try {
-                  const parsed = JSON.parse(sentimentResponse.analysis);
-                  setSentiment(parsed);
-                } catch {
-                  // respuesta no parseable, ignorar
-                }
+                  setSentiment(JSON.parse(sentimentResponse.analysis));
+                } catch { /* ignorar si no es JSON válido */ }
               }
             }
           );
@@ -127,6 +137,22 @@ function Sidebar() {
         }
       }
     );
+  };
+
+  const handleGenerateResponse = () => {
+    if (!emailContent) {
+      setError('No se detectó contenido de email. Abre un email primero.');
+      return;
+    }
+    executeGenerateReply(emailContent, selectedTone);
+  };
+
+  const handleSummarize = () => {
+    if (!emailContent) {
+      setError('No se detectó contenido de email. Abre un email primero.');
+      return;
+    }
+    executeSummarize(emailContent);
   };
 
   const handleCopy = () => {
