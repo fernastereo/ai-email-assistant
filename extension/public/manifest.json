@@ -14,10 +14,10 @@
   ],
   "host_permissions": [
     "http://localhost:3001/*",
+    "https://api.replie.email/*",
     "https://mail.google.com/*",
     "https://outlook.live.com/*",
-    "https://outlook.office.com/*",
-    "https://ai-email-assistant.vercel.app/*"
+    "https://outlook.office.com/*"
   ],
   "background": {
     "service_worker": "static/js/background.js",
