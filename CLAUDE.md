@@ -6,7 +6,7 @@
 
 Chrome Extension (Manifest V3) that integrates AI into Gmail and Outlook to provide smart reply generation, email summarization, and sentiment analysis. Powered by OpenAI's GPT-3.5-turbo via a Node.js/Express backend.
 
-**Current status (2026-05-02):** Backend deployed and live at `api.replie.email`. Extension primary UX implemented: inline toolbar injected below each email body in Gmail (one per message, works for plain text and HTML emails, handles threads correctly). Popup redesigned as settings/usage dashboard. Sidepanel removed entirely. Landing page exists at `/landing` and is the primary customer acquisition channel.
+**Current status (2026-05-02):** Backend deployed at `api.replie.email`. Supports multiple AI providers (OpenAI, DeepSeek, Groq) via `AI_PROVIDER` env var. Prompts centralized in `emailPrompts.js` with email cleaning, sender detection, and reply length control. Extension inline toolbar working end-to-end: generates replies, summarizes emails, persists tone + length settings. Popup shows live usage counter. Landing page at `/landing`.
 
 ---
 
@@ -56,7 +56,11 @@ ai-email-assistant/
         ├── controllers/
         │   └── aiController.js            # Request handlers
         ├── services/
-        │   └── openaiService.js            # OpenAI SDK integration (note: typo in filename)
+        │   ├── aiService.js               # Provider factory — reads AI_PROVIDER env var
+        │   ├── openaiService.js           # OpenAI provider (gpt-3.5-turbo)
+        │   ├── deepseekService.js         # DeepSeek provider (deepseek-chat)
+        │   ├── groqService.js             # Groq provider (llama-3.1-8b-instant) — free tier
+        │   └── emailPrompts.js            # Shared prompts + email content cleaner
         ├── middlewares/
         │   └── auth.js                    # EMPTY — not implemented yet
         └── utils/
@@ -84,7 +88,7 @@ ai-email-assistant/
 |------|---------|---------|
 | Node.js | 22 (Alpine) | Runtime |
 | Express | 5.1.0 | HTTP server |
-| OpenAI SDK | 5.23.1 | GPT-3.5-turbo calls |
+| OpenAI SDK | 5.23.1 | Shared SDK for OpenAI + DeepSeek + Groq (all OpenAI-compatible) |
 | Helmet | 8.1.0 | Security headers |
 | CORS | 2.8.5 | Cross-origin config |
 | Morgan | 1.10.1 | Request logging |
@@ -99,9 +103,8 @@ ai-email-assistant/
 | Entry | File | Role |
 |-------|------|------|
 | Popup | `index.html` → `main.tsx` → `App.tsx` → `popup.tsx` | Settings & usage dashboard (NOT action launcher) |
-| Sidebar | `sidepanel.html` → `sidebar.tsx` → `sidebar/sidebar.tsx` | Secondary features (thread analysis, history) — not primary flow |
-| Service Worker | `static/js/background.js` | Background logic, API orchestration |
-| Content Script | `static/js/content-script.js` | DOM injection, inline compose toolbar (primary UX) |
+| Service Worker | `static/js/background.js` | Background logic, API orchestration, daily limit enforcement |
+| Content Script | `static/js/content-script.js` | DOM injection, inline email toolbar (primary UX) |
 
 ### UX Architecture Decisions (2026-05-02)
 
@@ -116,25 +119,26 @@ ai-email-assistant/
 **Inline toolbar UX spec (✅ implemented):**
 - Appears automatically below each expanded email body in Gmail (detected via MutationObserver on `.ii.gt`)
 - One toolbar per `[data-message-id]` container — handles threads (N emails = N toolbars) and HTML emails correctly
-- Contains: "✨ Replie" brand label + tone selector (persisted) + "↩ Generar respuesta" + "📄 Resumir"
-- Generate Reply: auto-clicks Gmail's Reply button + calls API in parallel → injects text into compose box when both are ready; fallback shows text inline if compose doesn't open
+- Contains: "✨ Replie" brand label + tone selector + "↩ Generar respuesta" + "📄 Resumir"
+- Generate Reply: auto-clicks Gmail's Reply button + calls API in parallel → injects text into compose box; fallback shows text inline if compose doesn't open
 - Summarize: calls API → shows result in expandable area below toolbar
-- Tone selector change persists to `chrome.storage.local → settings.defaultTone`
+- Sender name extracted from Gmail DOM (`.gD` element) and sent in payload — model uses it in the greeting
+- Tone + length settings persisted in `chrome.storage.local → settings.defaultTone / defaultLength`
 
 ---
 
 ### Chrome Permissions
 ```
-contextMenus, tabs, sidePanel, activeTab, storage, scripting, notifications
+contextMenus, tabs, activeTab, storage, scripting, notifications
 ```
 
 ### Host Permissions
 ```
-http://localhost:3001/*              ← local backend
-https://mail.google.com/*           ← Gmail
-https://outlook.live.com/*          ← Outlook Personal
-https://outlook.office.com/*        ← Outlook 365
-https://ai-email-assistant.vercel.app/*  ← placeholder, update with real DO URL
+http://localhost:3001/*              ← local backend (dev)
+https://api.replie.email/*           ← production backend (DO Droplet)
+https://mail.google.com/*            ← Gmail
+https://outlook.live.com/*           ← Outlook Personal
+https://outlook.office.com/*         ← Outlook 365
 ```
 
 ---
@@ -160,20 +164,11 @@ Response back: background → content-script.js
 content-script.js injects reply text directly into compose box
 ```
 
-### Secondary flow — Sidepanel (advanced features)
-```
-User clicks 🤖 Replie button injected in Gmail toolbar
-  ↓
-content-script.js sends OPEN_SIDE_PANEL → background.js opens sidepanel
-  ↓
-Sidepanel: thread analysis, reply history, templates (Phase 4)
-```
-
 ### Popup
 ```
 User clicks extension icon in Chrome toolbar
   ↓
-Popup opens → shows: usage today, default tone, settings toggles
+Popup opens → shows: usage today (live counter), default tone, reply length
   (Login/account management will live here in Phase 3)
 ```
 
@@ -186,13 +181,10 @@ Defined in `constants.ts` — used for `chrome.runtime.sendMessage`:
 ```
 GET_SETTINGS        Popup → Background
 UPDATE_SETTINGS     Popup → Background
-TRACK_USAGE         Popup → Background
 GENERATE_REPLY      Content Script (inline toolbar) → Background
 SUMMARIZE_EMAIL     Content Script (inline toolbar) → Background
 ANALYZE_SENTIMENT   Content Script (inline toolbar) → Background
-GET_EMAIL_CONTENT   Content Script (inline toolbar) → Background (reads DOM directly)
 INSERT_REPLY        Background → Content Script (injects into compose box)
-OPEN_SIDE_PANEL     Content Script (🤖 button) → Background
 PING                Health check
 ```
 
@@ -200,14 +192,23 @@ PING                Health check
 
 ## Backend API Endpoints
 
-Base URL: `http://localhost:3001` (dev) — Digital Ocean App Platform (prod, not deployed yet)
+Base URL: `http://localhost:3001` (dev) / `https://api.replie.email` (prod)
 
 ```
 GET  /              → API info
 GET  /health        → Health check
-POST /api/ai/generate-reply    → { emailContent, tone?, customPrompt? }
+POST /api/ai/generate-reply    → { emailContent, tone?, customPrompt?, senderName?, length? }
 POST /api/ai/summarize-email   → { emailContent }
 POST /api/ai/detect-sentiment  → { emailContent }
+```
+
+### Request fields — generate-reply
+```
+emailContent   string   required  Raw email text (cleaned server-side before sending to model)
+tone           string   optional  formal | casual | concise | persuasive (default: formal)
+customPrompt   string   optional  Extra instructions appended to system prompt
+senderName     string   optional  Extracted from Gmail DOM (.gD) — used in greeting
+length         string   optional  short | medium | long (default: medium)
 ```
 
 ### Response Shapes
@@ -222,6 +223,21 @@ POST /api/ai/detect-sentiment  → { emailContent }
 { success: boolean, analysis: string, timestamp: string }
 // analysis is a JSON string: { sentiment, urgency, tone } — needs JSON.parse() on client
 ```
+
+### AI Provider system
+Controlled by `AI_PROVIDER` env var. All providers use the OpenAI SDK with different `baseURL`.
+
+| Provider | Env value | Model | Notes |
+|----------|-----------|-------|-------|
+| OpenAI | `openai` | gpt-3.5-turbo | Default |
+| DeepSeek | `deepseek` | deepseek-chat | Requires `DEEPSEEK_API_KEY` |
+| Groq | `groq` | llama-3.1-8b-instant | Free tier, fast |
+
+**`emailPrompts.js`** — shared module used by all providers:
+- `cleanEmailContent()` — strips legal disclaimers, signatures, forward headers, URLs, Gmail truncation notices before sending to model
+- `buildReplyPrompt(tone, customPrompt, senderName, length)` — instructs model it's the RECIPIENT replying, uses senderName in greeting, enforces length
+- `buildSummarizePrompt()` — 3-5 bullet points, same language as email
+- `buildSentimentPrompt()` — returns strict JSON `{ sentiment, urgency, tone }`
 
 ---
 
@@ -330,32 +346,35 @@ Stored via `chrome.storage.local`:
 
 ```javascript
 settings: {
-  defaultTone: 'formal',
+  defaultTone: 'formal',        // tone used by inline toolbar
+  defaultLength: 'medium',      // reply length: short | medium | long
   language: 'es',
-  apiUrl: 'http://localhost:3001/api',
+  apiUrl: 'http://localhost:3001', // backend URL (dev). Change for prod
   autoDetectEmails: true,
-  showSentimentAnalysis: true,
-  showSummary: true,
-  theme: 'light'
+  dailyLimit: 20,               // FREE_DAILY_LIMIT from background.js
 }
 usage: {
-  requestsToday: number,
-  lastReset: string  // ISO date string
+  requestsToday: number,        // resets daily
+  lastReset: string             // toDateString() format
 }
 ```
+
+**Important:** `onInstalled` merges new keys into existing settings without overwriting `apiUrl` or other user-set values. Safe to reload the extension without losing settings.
 
 ---
 
 ## Usage Limits
 
 ```
-FREE_DAILY:            20 requests/day
-PREMIUM_DAILY:        200 requests/day
-MAX_EMAIL_LENGTH:    5000 characters
-MAX_RESPONSE_LENGTH: 2000 characters
+FREE_DAILY:            20 requests/day  ← FREE_DAILY_LIMIT constant in background.js
+PREMIUM_DAILY:        200 requests/day  ← future, when auth is added
+MAX_EMAIL_LENGTH:    3000 characters    ← truncated in content-script.js before sending
 ```
 
-Rate limiting is tracked client-side in `chrome.storage.local`. Not enforced server-side yet.
+- Enforced client-side in `background.js → checkDailyLimit()` before every API call
+- Resets daily based on `toDateString()` comparison
+- `dailyLimit` stored in `chrome.storage.local → settings` so popup reads it dynamically
+- Not enforced server-side yet (Phase 2)
 
 ---
 
@@ -382,8 +401,7 @@ Located in `extension/src/components/ui/`. All built with **Radix UI** + **Tailw
 ### Vite Multi-Entry Config (`vite.config.ts`)
 ```
 Input:
-  main:    index.html      (popup)
-  sidebar: sidepanel.html  (side panel)
+  main:    index.html      (popup only — sidepanel removed)
 
 Output dir: dist/
 Asset naming: assets/[name].js | assets/[name].[ext]
@@ -409,17 +427,29 @@ npm run docker:dev   # docker compose up (hot-reload)
 
 ---
 
-## OpenAI Integration Details
+## AI Integration Details
 
-**Model:** `gpt-3.5-turbo`
-**Temperature:** `0.7`
-**Max tokens:** `500`
-**File:** `backend/src/services/openaiService.js`
+**Provider selection:** `AI_PROVIDER` env var → `aiService.js` factory
+**Shared prompt logic:** `backend/src/services/emailPrompts.js`
 
-### System Prompt Strategy
-- Language: responds in same language as the email
-- Tone injection: system prompt dynamically sets tone based on `tone` param
-- Custom instructions appended to system prompt when `customPrompt` is provided
+| Setting | Value |
+|---------|-------|
+| OpenAI model | `gpt-3.5-turbo` |
+| DeepSeek model | `deepseek-chat` |
+| Groq model | `llama-3.1-8b-instant` |
+| Temperature (reply) | `0.7` |
+| Temperature (summarize) | `0.5` |
+| Temperature (sentiment) | `0.3` |
+| Max tokens (reply) | `500` |
+| Max tokens (summarize) | `400` |
+| Max tokens (sentiment) | `100` |
+
+### Prompt Strategy (`emailPrompts.js`)
+- `cleanEmailContent()` strips legal disclaimers, signatures, forward headers, URLs, Gmail truncation (`[Mensaje acortado]`) before sending to model
+- Reply prompt explicitly tells model it's the **RECIPIENT** responding, not the sender
+- `senderName` from Gmail DOM injected directly into greeting instruction — no inference needed
+- `length` maps to explicit word-count instruction: short (2-3 sentences), medium (1-2 paragraphs), long (3-4 paragraphs)
+- All prompts respond in same language as the original email
 
 ---
 
@@ -452,8 +482,7 @@ Manifest references `/icons/icon48.png` but the `/icons/` directory doesn't exis
 ```
 content-script.js      ← emailObserver (MutationObserver) never disconnects (memory leak)
 content-script.js      ← .ii.gt selector is Gmail-specific; Outlook not yet supported
-content-script.js      ← reply button selector uses aria-label with Spanish strings only
-background.js          ← daily limit enforced at 50 but UI shows 20; needs alignment
+content-script.js      ← reply button selector includes Spanish aria-labels only (Responder)
 No tests               ← jest configured but 0 test files exist
 ```
 
@@ -475,7 +504,7 @@ No tests               ← jest configured but 0 test files exist
 | ✅ | Move workflows from `landing/.github` to repo root `.github` |
 | ✅ | `workflow_dispatch` for manual deploys |
 
-### Phase 1 — Inline compose toolbar (primary UX redesign)
+### Phase 1 — Extension core ✅ COMPLETED
 
 | # | Status | Task | File(s) |
 |---|--------|------|---------|
@@ -485,8 +514,11 @@ No tests               ← jest configured but 0 test files exist
 | 4 | ✅ | Inline toolbar: one toolbar per `[data-message-id]` (threads + HTML emails) | `content-script.js` |
 | 5 | ✅ | Inline toolbar: Generate Reply (opens compose + injects text) | `content-script.js` |
 | 6 | ✅ | Inline toolbar: Summarize (shows result below toolbar) | `content-script.js` |
-| 7 | ✅ | Inline toolbar: tone selector persists via chrome.storage.local | `content-script.js` |
-| 8 | ✅ | Redesign popup as settings/usage dashboard | `popup.tsx` |
+| 7 | ✅ | Inline toolbar: tone + length settings persisted via chrome.storage.local | `content-script.js` |
+| 8 | ✅ | Redesign popup as settings/usage dashboard with live counter | `popup.tsx` |
+| 9 | ✅ | Multi-provider AI backend (OpenAI / DeepSeek / Groq) via AI_PROVIDER | `aiService.js`, `*Service.js` |
+| 10 | ✅ | Centralized prompt system with email cleaning + sender name + length control | `emailPrompts.js` |
+| 11 | ✅ | Daily limit enforcement (FREE_DAILY_LIMIT=20) with safe settings merge on install | `background.js` |
 | 9 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
 | 10 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
 | 11 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
@@ -495,14 +527,13 @@ No tests               ← jest configured but 0 test files exist
 
 | # | Status | Task | Notes |
 |---|--------|------|-------|
-| 9 | ⬜ | Options/settings page | `options.html` + chrome.storage wiring |
-| 10 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
-| 11 | ⬜ | Parse + validate detectSentiment JSON response | `openaiService.js` + controller |
-| 12 | ⬜ | Error boundaries in React | Prevent full crash on JS error |
-| 13 | ⬜ | Retry logic in ApiService | Currently fails on first error |
+| 9 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
+| 10 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
+| 11 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
+| 12 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
+| 13 | ⬜ | Validate detectSentiment JSON server-side | `emailPrompts.js` + controller |
 | 14 | ⬜ | Fix MutationObserver memory leak | `content-script.js` |
-| 15 | ⬜ | Persist tone/settings across sessions | `chrome.storage.local` integration |
-| 16 | ⬜ | Real usage count shown in sidebar UI | Wire to background.js storage |
+| 15 | ⬜ | Error boundaries in React popup | Prevent full crash on JS error |
 
 ### Phase 2b — Landing page fixes (critical before real traffic)
 

@@ -343,10 +343,12 @@ const EMAIL_BODY_SELECTOR = '.ii.gt';
 // Tracked on the [data-message-id] container to guarantee one toolbar per message
 const injectedMessageContainers = new WeakSet();
 let cachedTone = 'formal';
+let cachedLength = 'medium';
 
-// Load persisted tone from storage
+// Load persisted settings from storage
 chrome.storage.local.get(['settings'], (result) => {
   if (result.settings?.defaultTone) cachedTone = result.settings.defaultTone;
+  if (result.settings?.defaultLength) cachedLength = result.settings.defaultLength;
 });
 
 function saveTone(tone) {
@@ -408,6 +410,11 @@ function injectReplieEmailToolbar(emailBodyEl) {
   if (!emailContent || emailContent.length < 20) return;
 
   injectedMessageContainers.add(messageContainer);
+
+  // Extract sender name from Gmail DOM (.gD is the sender name span)
+  const senderName = messageContainer.querySelector('.gD')?.getAttribute('name')
+    || messageContainer.querySelector('.gD')?.innerText?.trim()
+    || null;
 
   // ── Wrapper ──────────────────────────────────────────────
   const wrapper = document.createElement('div');
@@ -512,7 +519,7 @@ function injectReplieEmailToolbar(emailBodyEl) {
       waitForComposeBox(4000),
       new Promise((resolve) => {
         chrome.runtime.sendMessage(
-          { type: 'GENERATE_REPLY', data: { emailContent, tone: toneSelect.value } },
+          { type: 'GENERATE_REPLY', data: { emailContent, tone: toneSelect.value, senderName, length: cachedLength } },
           resolve
         );
       })

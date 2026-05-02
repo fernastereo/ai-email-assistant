@@ -1,15 +1,18 @@
 const OpenAI = require('openai')
 const { cleanEmailContent, buildReplyPrompt, buildSummarizePrompt, buildSentimentPrompt } = require('./emailPrompts')
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const deepseek = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: 'https://api.deepseek.com',
 })
 
-class OpenAIService {
+const MODEL = 'deepseek-chat' //deepseek-v4-pro
+
+class DeepSeekService {
   async generateEmailReply(emailContent, tone = 'formal', customPrompt = '', senderName = null, length = 'medium') {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await deepseek.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length) },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -25,8 +28,8 @@ class OpenAIService {
 
   async summarizeEmail(emailContent) {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await deepseek.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildSummarizePrompt() },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -42,8 +45,8 @@ class OpenAIService {
 
   async detectSentiment(emailContent) {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await deepseek.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildSentimentPrompt() },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -58,4 +61,4 @@ class OpenAIService {
   }
 }
 
-module.exports = new OpenAIService()
+module.exports = new DeepSeekService()

@@ -4,22 +4,35 @@
 // ⚠️  CAMBIAR ESTA URL al hacer deploy a producción
 const API_BASE_URL = 'http://localhost:3001';
 
+const FREE_DAILY_LIMIT = 20;
+
 // Instalar extensión
 chrome.runtime.onInstalled.addListener(() => {
   console.log('AI Email Assistant installed');
   
-  // Configuración inicial
-  chrome.storage.local.set({
-    settings: {
-      defaultTone: 'formal',
-      language: 'es',
-      apiUrl: API_BASE_URL,
-      autoDetectEmails: true
-    },
-    usage: {
-      requestsToday: 0,
-      lastReset: new Date().toDateString()
+  // Configuración inicial — solo setea valores que no existan aún
+  chrome.storage.local.get(['settings', 'usage'], (result) => {
+    const defaults = {};
+    if (!result.settings) {
+      defaults.settings = {
+        defaultTone: 'formal',
+        defaultLength: 'medium',
+        language: 'es',
+        apiUrl: API_BASE_URL,
+        autoDetectEmails: true,
+        dailyLimit: FREE_DAILY_LIMIT,
+      };
+    } else {
+      // Merge new keys into existing settings without overwriting
+      const merged = { ...result.settings };
+      if (!merged.defaultLength) merged.defaultLength = 'medium';
+      if (!merged.dailyLimit) merged.dailyLimit = FREE_DAILY_LIMIT;
+      defaults.settings = merged;
     }
+    if (!result.usage) {
+      defaults.usage = { requestsToday: 0, lastReset: new Date().toDateString() };
+    }
+    chrome.storage.local.set(defaults);
   });
 
   // Crear context menu
@@ -161,14 +174,14 @@ async function checkDailyLimit() {
   const today = new Date().toDateString();
   const usage = result.usage || { requestsToday: 0, lastReset: today };
   if (usage.lastReset !== today) return false; // reset day, allow
-  return usage.requestsToday >= 50;
+  return usage.requestsToday >= FREE_DAILY_LIMIT;
 }
 
 // Manejar generación de respuesta
 async function handleGenerateReply(data) {
   try {
     if (await checkDailyLimit()) {
-      return { success: false, error: 'Daily limit exceeded (50 requests)' };
+      return { success: false, error: `Daily limit exceeded (${FREE_DAILY_LIMIT} requests/day)` };
     }
     const result = await makeAPIRequest('/api/ai/generate-reply', data);
     await trackUsage(); // solo cuenta si el request fue exitoso

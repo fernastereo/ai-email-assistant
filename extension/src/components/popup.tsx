@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Bot, ExternalLink, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 
-const DAILY_LIMIT = 20;
+const DEFAULT_DAILY_LIMIT = 20;
 
 const TONES = [
   { value: 'formal',     label: '📄 Formal' },
@@ -15,26 +15,59 @@ const TONES = [
   { value: 'persuasive', label: '🎯 Persuasivo' },
 ];
 
+const LENGTHS = [
+  { value: 'short',  label: '▪ Corta' },
+  { value: 'medium', label: '▪▪ Media' },
+  { value: 'long',   label: '▪▪▪ Larga' },
+];
+
 export const Popup = () => {
   const [requestsToday, setRequestsToday] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(DEFAULT_DAILY_LIMIT);
   const [defaultTone, setDefaultTone] = useState('formal');
+  const [defaultLength, setDefaultLength] = useState('medium');
 
   useEffect(() => {
-    chrome.storage.local.get(['usage', 'settings'], (result) => {
-      const usage = result.usage as { requestsToday?: number } | undefined;
-      const settings = result.settings as { defaultTone?: string } | undefined;
-      if (usage?.requestsToday != null) setRequestsToday(usage.requestsToday);
-      if (settings?.defaultTone) setDefaultTone(settings.defaultTone);
-    });
+    const loadFromStorage = () => {
+      chrome.storage.local.get(['usage', 'settings'], (result) => {
+        const usage = result.usage as { requestsToday?: number } | undefined;
+        const settings = result.settings as { defaultTone?: string; defaultLength?: string; dailyLimit?: number } | undefined;
+        if (usage?.requestsToday != null) setRequestsToday(usage.requestsToday);
+        if (settings?.defaultTone) setDefaultTone(settings.defaultTone);
+        if (settings?.defaultLength) setDefaultLength(settings.defaultLength);
+        if (settings?.dailyLimit != null) setDailyLimit(settings.dailyLimit);
+      });
+    };
+
+    loadFromStorage();
+
+    // Keep usage count in sync if storage changes while popup is open
+    const onStorageChanged = (changes: Record<string, chrome.storage.StorageChange>) => {
+      const newUsage = changes.usage?.newValue as { requestsToday?: number } | undefined;
+      if (newUsage?.requestsToday != null) {
+        setRequestsToday(newUsage.requestsToday);
+      }
+    };
+    chrome.storage.onChanged.addListener(onStorageChanged);
+    return () => chrome.storage.onChanged.removeListener(onStorageChanged);
   }, []);
+
+  const saveSetting = (key: string, value: string) => {
+    chrome.storage.local.get(['settings'], (result) => {
+      const settings = (result.settings as Record<string, unknown>) || {};
+      settings[key] = value;
+      chrome.storage.local.set({ settings });
+    });
+  };
 
   const handleToneChange = (tone: string) => {
     setDefaultTone(tone);
-    chrome.storage.local.get(['settings'], (result) => {
-      const settings = (result.settings as Record<string, unknown>) || {};
-      settings.defaultTone = tone;
-      chrome.storage.local.set({ settings });
-    });
+    saveSetting('defaultTone', tone);
+  };
+
+  const handleLengthChange = (length: string) => {
+    setDefaultLength(length);
+    saveSetting('defaultLength', length);
   };
 
   const handleOpenGmail = () => {
@@ -42,7 +75,7 @@ export const Popup = () => {
     window.close();
   };
 
-  const usagePercent = Math.min((requestsToday / DAILY_LIMIT) * 100, 100);
+  const usagePercent = Math.min((requestsToday / dailyLimit) * 100, 100);
   const usageColor = usagePercent >= 90 ? '#d93025' : usagePercent >= 70 ? '#f29900' : '#137333';
 
   return (
@@ -71,7 +104,7 @@ export const Popup = () => {
               Uso hoy
             </Label>
             <span className="text-xs font-medium" style={{ color: usageColor }}>
-              {requestsToday} / {DAILY_LIMIT}
+              {requestsToday} / {dailyLimit}
             </span>
           </div>
           <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
@@ -104,6 +137,27 @@ export const Popup = () => {
           <p className="text-xs text-muted-foreground">
             Se aplica al toolbar en el compose de Gmail.
           </p>
+        </div>
+
+        <Separator />
+
+        {/* Default length */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Longitud de respuesta
+          </Label>
+          <Select value={defaultLength} onValueChange={handleLengthChange}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LENGTHS.map(({ value, label }) => (
+                <SelectItem key={value} value={value} className="text-xs">
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator />

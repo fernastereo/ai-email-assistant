@@ -1,15 +1,15 @@
-const openaiService = require('../services/openaiService')
+const openaiService = require('../services/aiService')
 
 class AIController {
   async generateReply(req, res) {
     try {
-      const { emailContent, tone, customPrompt } = req.body
+      const { emailContent, tone, customPrompt, senderName, length } = req.body
 
       if(!emailContent){
         return res.status(400).json({ error: 'Email content is required' })
       }
 
-      const reply = await openaiService.generateEmailReply(emailContent, tone, customPrompt)
+      const reply = await openaiService.generateEmailReply(emailContent, tone, customPrompt, senderName, length)
       // const reply = "Hello John,\n\nThank you for your email. I will review the proposal and get back to you shortly.\n\nBest regards,\n\n[Your Name]"
       res.json({
         success: true,
