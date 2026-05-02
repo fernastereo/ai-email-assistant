@@ -281,15 +281,56 @@ curl -X POST http://localhost:3001/api/ai/detect-sentiment \
   -d '{"emailContent": "This is urgent! I need the report NOW."}'
 ```
 
-### Deploy to Digital Ocean App Platform
+### Deploy a producción (Digital Ocean Droplet)
+El servidor corre la imagen pre-construida de `ghcr.io` — no hay código fuente en el servidor, solo:
+- `/opt/replie/.env` — variables de entorno (nunca en git)
+- `/opt/replie/docker-compose.prod.yml` — orquestación (sí en git, en `backend/`)
+- `/opt/replie/Caddyfile` — reverse proxy con SSL
+
+El workflow `backend.yml` de GitHub Actions:
+1. Hace build del Dockerfile y sube la imagen a `ghcr.io`
+2. Copia el `docker-compose.prod.yml` al servidor via SSH
+3. Ejecuta `docker compose pull && docker compose up -d` en el servidor
+
+### ⚠️ REGLA: Agregar una nueva variable de entorno
+
+Cada vez que se agrega una nueva env var al backend hay que hacer **dos cosas**:
+
+**1. Agregar la variable al `.env` del servidor** (SSH):
+```bash
+nano /opt/replie/.env
+# Agregar: NUEVA_KEY=valor
 ```
-1. Push repo to GitHub
-2. DO Dashboard → App Platform → Create App
-3. Connect GitHub repo → Source directory: /backend
-4. DO detects Dockerfile automatically
-5. Set env vars: OPENAI_API_KEY, NODE_ENV=production, CORS_ORIGIN=chrome-extension://<id>
-6. Deploy → auto-deploys on every git push
-Cost: ~$5/month (Basic plan)
+
+**2. Exponerla en `docker-compose.prod.yml`** (localmente, luego commit):
+```yaml
+# backend/docker-compose.prod.yml → sección environment del servicio api:
+- NUEVA_KEY=${NUEVA_KEY}
+```
+
+Luego hacer commit y push para disparar el deploy:
+```bash
+git add backend/docker-compose.prod.yml
+git commit -m "fix: expose NUEVA_KEY to production container"
+git push origin staging
+```
+
+> **Por qué:** El compose file usa `image:` (no `build:`), así que Docker no lee el `.env` automáticamente — cada variable debe estar explícitamente listada en `environment:`. Si solo se agrega al `.env` del servidor pero no al compose, el contenedor arranca sin esa variable.
+
+### Variables de entorno actuales en producción
+```bash
+# /opt/replie/.env — todas deben estar en environment: del compose
+NODE_ENV=production
+PORT=3001
+AI_PROVIDER=groq               # openai | deepseek | groq
+OPENAI_API_KEY=sk-proj-...
+DEEPSEEK_API_KEY=...
+GROQ_API_KEY=gsk_...
+CORS_ORIGIN=chrome-extension://...
+GITHUB_REPO=fernastereo/ai-email-assistant
+POSTGRES_DB=...
+POSTGRES_USER=...
+POSTGRES_PASSWORD=...
 ```
 
 ---

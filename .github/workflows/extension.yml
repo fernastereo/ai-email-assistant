@@ -1,0 +1,92 @@
+name: 🧩 Extension — Build & Package
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'extension/**'
+      - '.github/workflows/extension.yml'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'extension/**'
+      - '.github/workflows/extension.yml'
+  workflow_dispatch:
+
+jobs:
+  # ── Validación en PRs abiertos ────────────────────────────────
+  validate:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    name: 🔍 Validate
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: 📋 Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: 🔍 Lint
+        working-directory: extension
+        run: npm run lint
+
+      - name: 🏗️ Build
+        working-directory: extension
+        run: npm run build
+
+  # ── Build y empaquetado del zip ───────────────────────────────
+  build:
+    if: |
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    name: 🏗️ Build & Package
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: extension/package-lock.json
+
+      - name: 📋 Install dependencies
+        working-directory: extension
+        run: npm ci
+
+      - name: 🏗️ Build
+        working-directory: extension
+        run: npm run build
+
+      - name: 📦 Package extension as zip
+        run: |
+          cd extension/dist
+          zip -r ../../replie-extension-${{ github.sha }}.zip .
+          echo "✅ Created replie-extension-${{ github.sha }}.zip"
+
+      - name: 📤 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: replie-extension-${{ github.sha }}
+          path: replie-extension-${{ github.sha }}.zip
+          retention-days: 30
+
+      - name: ✅ Done
+        run: |
+          echo "🎉 Extension built and packaged"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "🕐 $(date)"
