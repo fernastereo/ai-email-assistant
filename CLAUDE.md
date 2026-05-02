@@ -582,10 +582,10 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 
 | # | Status | Task | Notes |
 |---|--------|------|-------|
-| 1 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` — needed for Chrome Web Store + notifications |
-| 2 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server — currently `*` |
-| 3 | ⬜ | Rebuild production Docker image with franc | `docker compose build --no-cache` on DO server, or push to trigger CI |
-| 4 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
+| 1 | ✅ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
+| 2 | ✅ | Update CORS_ORIGIN with real extension ID | `.env` on server |
+| 3 | ✅ | Rebuild production Docker image with franc | Triggered via GitHub Actions |
+| 4 | ✅ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/extension.yml` |
 | 5 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
 | 6 | ⬜ | Validate detectSentiment JSON server-side | `aiController.js` — parse + re-serialize before returning |
 | 7 | ⬜ | Fix MutationObserver memory leak | `content-script.js` — `emailObserver` never disconnects |

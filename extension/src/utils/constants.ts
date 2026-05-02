@@ -3,7 +3,7 @@
 // APIs y URLs
 export const API_CONFIG = {
   DEVELOPMENT: 'http://localhost:3001/api',
-  PRODUCTION: 'https://tu-dominio.com/api',
+  PRODUCTION: 'https://api.replie.email/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3
 };
