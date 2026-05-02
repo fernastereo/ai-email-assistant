@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import Thanks from "./pages/Thanks";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import { analytics, logEvent, isProduction } from "./lib/firebaseConfig";
 import { useEffect } from "react";
@@ -37,6 +38,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/thanks" element={<Thanks />} />
+          <Route path="/privacy" element={<Privacy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
