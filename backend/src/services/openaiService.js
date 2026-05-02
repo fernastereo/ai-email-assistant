@@ -11,7 +11,7 @@ class OpenAIService {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length) },
+          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length, cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.7,
@@ -28,7 +28,7 @@ class OpenAIService {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
-          { role: 'system', content: buildSummarizePrompt() },
+          { role: 'system', content: buildSummarizePrompt(cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.5,

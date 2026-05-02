@@ -1,4 +1,5 @@
 // Shared prompts and content utilities for all AI providers
+const { franc } = require('franc')
 
 const TONE_DESCRIPTIONS = {
   formal:     'professional and respectful',
@@ -48,37 +49,62 @@ function cleanEmailContent(raw) {
   return text.trim()
 }
 
+// ISO 639-3 → human-readable name for the most common languages
+const ISO_TO_LANGUAGE = {
+  eng: 'English', spa: 'Spanish', deu: 'German', fra: 'French',
+  por: 'Portuguese', ita: 'Italian', nld: 'Dutch', pol: 'Polish',
+  rus: 'Russian', zho: 'Chinese', jpn: 'Japanese', kor: 'Korean',
+  ara: 'Arabic', hin: 'Hindi', tur: 'Turkish', swe: 'Swedish',
+  nor: 'Norwegian', dan: 'Danish', fin: 'Finnish', cat: 'Catalan',
+}
+
+function detectLanguage(text) {
+  const iso = franc(text, { minLength: 20 })
+  return ISO_TO_LANGUAGE[iso] || null
+}
+
 const LENGTH_INSTRUCTIONS = {
   short:  'Keep the reply SHORT: 2-3 sentences maximum.',
   medium: 'Keep the reply MEDIUM length: 1-2 short paragraphs.',
   long:   'Write a DETAILED reply: 3-4 paragraphs, covering all relevant points thoroughly.',
 }
 
-function buildReplyPrompt(tone, customPrompt, senderName, length) {
+function buildReplyPrompt(tone, customPrompt, senderName, length, emailContent) {
   const toneDesc = TONE_DESCRIPTIONS[tone?.toLowerCase()] || TONE_DESCRIPTIONS.formal
   const lengthInstruction = LENGTH_INSTRUCTIONS[length] || LENGTH_INSTRUCTIONS.medium
+  const detectedLanguage = emailContent ? detectLanguage(emailContent) : null
+  const languageInstruction = detectedLanguage
+    ? `- Write the entire reply in ${detectedLanguage} — that is the language of the email`
+    : `- Write the entire reply in the same language as the email`
   const greetingInstruction = senderName
-    ? `- Start the reply with a greeting addressing the sender by name: "${senderName}" (e.g. "Estimado ${senderName}," or "Hola ${senderName}," depending on tone and language)`
-    : `- Start with a generic greeting appropriate to the language and tone (e.g. "Estimado equipo," or "Dear team,")`
+    ? `- Start with a greeting to the sender using their name "${senderName}"`
+    : `- Start with a generic greeting appropriate to the tone and language`
 
-  return `You are an intelligent email assistant helping the user (the RECIPIENT) write a reply to an email they received.
+  return `You are an intelligent email assistant helping the user (the RECIPIENT) write a reply.
 
 Your task:
 - Write a reply FROM the perspective of the person who RECEIVED this email, responding back to the sender
+- ${languageInstruction}
 ${greetingInstruction}
 - ${lengthInstruction}
 - Do NOT repeat or summarize what the sender already said
 - Do NOT impersonate the original sender
 - Use a ${toneDesc} tone
-- Respond in the same language as the original email
-- Be concise and natural — no invented facts, no placeholder text like [Your Name]
+- Be concise and natural — no invented facts
+- Do NOT sign the reply — no name, no closing signature, no sign-off
+- Do NOT infer or assume the recipient's name or gender
 - Do not include a subject line${customPrompt ? `\n- Additional instructions: ${customPrompt}` : ''}`
 }
 
-function buildSummarizePrompt() {
+function buildSummarizePrompt(emailContent) {
+  const detectedLanguage = emailContent ? detectLanguage(emailContent) : null
+  const languageInstruction = detectedLanguage
+    ? `Respond in ${detectedLanguage}.`
+    : `Respond in the same language as the email.`
+
   return `Summarize this email in 3-5 bullet points.
 Include: main topic, any required actions, key names or dates, and the overall tone.
-Respond in the same language as the original email.
+${languageInstruction}
 Be concise — each bullet point should be one sentence.`
 }
 
@@ -88,4 +114,4 @@ Respond ONLY with valid JSON in exactly this format, no extra text:
 {"sentiment": "positive|negative|neutral", "urgency": "high|medium|low", "tone": "formal|casual|aggressive|friendly"}`
 }
 
-module.exports = { cleanEmailContent, buildReplyPrompt, buildSummarizePrompt, buildSentimentPrompt }
+module.exports = { cleanEmailContent, detectLanguage, buildReplyPrompt, buildSummarizePrompt, buildSentimentPrompt }

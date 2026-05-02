@@ -14,7 +14,7 @@ class DeepSeekService {
       const completion = await deepseek.chat.completions.create({
         model: MODEL,
         messages: [
-          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length) },
+          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length, cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.7,
@@ -31,7 +31,7 @@ class DeepSeekService {
       const completion = await deepseek.chat.completions.create({
         model: MODEL,
         messages: [
-          { role: 'system', content: buildSummarizePrompt() },
+          { role: 'system', content: buildSummarizePrompt(cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.5,

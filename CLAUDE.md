@@ -6,7 +6,7 @@
 
 Chrome Extension (Manifest V3) that integrates AI into Gmail and Outlook to provide smart reply generation, email summarization, and sentiment analysis. Powered by OpenAI's GPT-3.5-turbo via a Node.js/Express backend.
 
-**Current status (2026-05-02):** Backend deployed at `api.replie.email`. Supports multiple AI providers (OpenAI, DeepSeek, Groq) via `AI_PROVIDER` env var. Prompts centralized in `emailPrompts.js` with email cleaning, sender detection, and reply length control. Extension inline toolbar working end-to-end: generates replies, summarizes emails, persists tone + length settings. Popup shows live usage counter. Landing page at `/landing`.
+**Current status (2026-05-02):** Backend deployed at `api.replie.email`. Supports multiple AI providers (OpenAI, DeepSeek, Groq) via `AI_PROVIDER` env var. Prompts centralized in `emailPrompts.js` with email cleaning, sender detection, reply length control, and automatic language detection via `franc`. Extension inline toolbar working end-to-end: generates replies, summarizes emails, persists tone + length settings. Popup shows live usage counter. Landing page at `/landing`.
 
 ---
 
@@ -89,6 +89,7 @@ ai-email-assistant/
 | Node.js | 22 (Alpine) | Runtime |
 | Express | 5.1.0 | HTTP server |
 | OpenAI SDK | 5.23.1 | Shared SDK for OpenAI + DeepSeek + Groq (all OpenAI-compatible) |
+| franc | 6.2.0 | Language detection from email content (ISO 639-3) |
 | Helmet | 8.1.0 | Security headers |
 | CORS | 2.8.5 | Cross-origin config |
 | Morgan | 1.10.1 | Request logging |
@@ -231,12 +232,13 @@ Controlled by `AI_PROVIDER` env var. All providers use the OpenAI SDK with diffe
 |----------|-----------|-------|-------|
 | OpenAI | `openai` | gpt-3.5-turbo | Default |
 | DeepSeek | `deepseek` | deepseek-chat | Requires `DEEPSEEK_API_KEY` |
-| Groq | `groq` | llama-3.1-8b-instant | Free tier, fast |
+| Groq | `groq` | llama-3.3-70b-versatile | Free tier — upgraded from 8b-instant (too small, hallucinated names/gender) |
 
 **`emailPrompts.js`** — shared module used by all providers:
 - `cleanEmailContent()` — strips legal disclaimers, signatures, forward headers, URLs, Gmail truncation notices before sending to model
-- `buildReplyPrompt(tone, customPrompt, senderName, length)` — instructs model it's the RECIPIENT replying, uses senderName in greeting, enforces length
-- `buildSummarizePrompt()` — 3-5 bullet points, same language as email
+- `detectLanguage(text)` — uses `franc` to detect ISO 639-3 language code, maps to human-readable name (e.g. `spa` → `"Spanish"`)
+- `buildReplyPrompt(tone, customPrompt, senderName, length, emailContent)` — instructs model it's the RECIPIENT replying, injects explicit language instruction (`"Write the entire reply in German"`), uses senderName in greeting, enforces length, explicitly forbids signing with a name
+- `buildSummarizePrompt(emailContent)` — 3-5 bullet points, detects and responds in same language as email
 - `buildSentimentPrompt()` — returns strict JSON `{ sentiment, urgency, tone }`
 
 ---
@@ -436,7 +438,7 @@ npm run docker:dev   # docker compose up (hot-reload)
 |---------|-------|
 | OpenAI model | `gpt-3.5-turbo` |
 | DeepSeek model | `deepseek-chat` |
-| Groq model | `llama-3.1-8b-instant` |
+| Groq model | `llama-3.3-70b-versatile` |
 | Temperature (reply) | `0.7` |
 | Temperature (summarize) | `0.5` |
 | Temperature (sentiment) | `0.3` |
@@ -449,7 +451,15 @@ npm run docker:dev   # docker compose up (hot-reload)
 - Reply prompt explicitly tells model it's the **RECIPIENT** responding, not the sender
 - `senderName` from Gmail DOM injected directly into greeting instruction — no inference needed
 - `length` maps to explicit word-count instruction: short (2-3 sentences), medium (1-2 paragraphs), long (3-4 paragraphs)
-- All prompts respond in same language as the original email
+- Language detected server-side via `franc` — explicit instruction injected (`"Write the entire reply in German"`) instead of relying on model inference (small models ignore "respond in same language")
+- Reply prompt explicitly forbids signing with a name or inferring recipient gender — small models hallucinate both
+
+### Why `llama-3.1-8b-instant` was replaced
+Groq's 8b model was unreliable with instruction following:
+- Ignored "respond in same language" → always replied in Spanish
+- Added a closing signature with an invented name
+- Inferred recipient's gender incorrectly
+Upgraded to `llama-3.3-70b-versatile` (also free on Groq) which follows instructions correctly.
 
 ---
 
@@ -460,6 +470,9 @@ npm run docker:dev   # docker compose up (hot-reload)
 ### 3. ✅ FIXED — Popup handlers implemented
 ### 4. ✅ FIXED — sidepanel.html script reference (Vite handles correctly)
 ### 5. ✅ FIXED — Usage tracking now fires only after successful API call
+### 10. ✅ FIXED — Inline email toolbar implemented and working
+### 11. ✅ FIXED — Language detection implemented via `franc` (server-side, explicit injection)
+### 12. ✅ FIXED — Groq model upgraded to llama-3.3-70b-versatile (stops hallucinating signatures/gender)
 
 ### 6. CORS_ORIGIN is a placeholder
 `backend/.env` has `CORS_ORIGIN=chrome-extension://your-extension-id`. Needs real extension ID (obtained after loading unpacked or publishing).
@@ -473,7 +486,8 @@ Manifest references `/icons/icon48.png` but the `/icons/` directory doesn't exis
 ### 9. detectSentiment returns raw string, not parsed JSON
 `backend/src/services/openaiService.js` returns `completion.choices[0].message.content` directly. Client does `JSON.parse()` with a try/catch but no server-side validation if OpenAI returns malformed JSON.
 
-### 10. ✅ FIXED — Inline email toolbar implemented and working
+### 13. franc not installed in production Docker image
+`franc` was added to `package.json` but the production Docker image on DO has not been rebuilt yet. Run `docker compose build --no-cache && docker compose up -d` on the server, or push to trigger the GitHub Actions backend deploy.
 
 ---
 
@@ -484,6 +498,7 @@ content-script.js      ← emailObserver (MutationObserver) never disconnects (m
 content-script.js      ← .ii.gt selector is Gmail-specific; Outlook not yet supported
 content-script.js      ← reply button selector includes Spanish aria-labels only (Responder)
 No tests               ← jest configured but 0 test files exist
+emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (< 20 chars)
 ```
 
 ---
@@ -519,21 +534,21 @@ No tests               ← jest configured but 0 test files exist
 | 9 | ✅ | Multi-provider AI backend (OpenAI / DeepSeek / Groq) via AI_PROVIDER | `aiService.js`, `*Service.js` |
 | 10 | ✅ | Centralized prompt system with email cleaning + sender name + length control | `emailPrompts.js` |
 | 11 | ✅ | Daily limit enforcement (FREE_DAILY_LIMIT=20) with safe settings merge on install | `background.js` |
-| 9 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
-| 10 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
-| 11 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
+| 12 | ✅ | Language detection via `franc` — explicit language injected into prompt | `emailPrompts.js` |
+| 13 | ✅ | Upgrade Groq model to llama-3.3-70b-versatile | `groqService.js` |
 
 ### Phase 2 — Make it work well
 
 | # | Status | Task | Notes |
 |---|--------|------|-------|
-| 9 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
-| 10 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
-| 11 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
-| 12 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
-| 13 | ⬜ | Validate detectSentiment JSON server-side | `emailPrompts.js` + controller |
-| 14 | ⬜ | Fix MutationObserver memory leak | `content-script.js` |
-| 15 | ⬜ | Error boundaries in React popup | Prevent full crash on JS error |
+| 1 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` — needed for Chrome Web Store + notifications |
+| 2 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server — currently `*` |
+| 3 | ⬜ | Rebuild production Docker image with franc | `docker compose build --no-cache` on DO server, or push to trigger CI |
+| 4 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
+| 5 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
+| 6 | ⬜ | Validate detectSentiment JSON server-side | `aiController.js` — parse + re-serialize before returning |
+| 7 | ⬜ | Fix MutationObserver memory leak | `content-script.js` — `emailObserver` never disconnects |
+| 8 | ⬜ | Error boundaries in React popup | Prevent full popup crash on JS error |
 
 ### Phase 2b — Landing page fixes (critical before real traffic)
 
@@ -566,12 +581,42 @@ No tests               ← jest configured but 0 test files exist
 | Reply history | Save generated replies for reuse |
 | Template system | Save custom prompts as reusable templates |
 | Quick reply mode | 3 short options in one click (like iOS) |
-| Auto-detect email language | Already partially in prompts, needs UI |
 | Full thread context | Send full conversation, not just last email |
+| Attachment reading | Extract text from PDF/DOCX/XLSX attachments and include in AI context (see below) |
 | Keyboard shortcuts | Alt+G generate, Alt+I insert |
 | Onboarding tour | First-use tooltip walkthrough |
 | Firefox Add-on | Same codebase, different manifest |
 | Analytics dashboard | Usage stats, time saved metrics |
+
+### Attachment Reading — Future Feature Design
+
+**Feasibility:** Yes, possible via Gmail DOM + fetch with session cookies.
+
+**Flow:**
+```
+content-script detects attachment link in Gmail DOM
+  → fetch attachment URL (same-origin, uses Gmail session cookies)
+  → POST binary to /api/ai/process-attachment
+  → backend extracts text by file type
+  → text prepended to emailContent before sending to model
+```
+
+**Backend libraries by type:**
+| Type | Library | Notes |
+|------|---------|-------|
+| PDF | `pdf-parse` or `pdfjs-dist` | Easy |
+| DOCX | `mammoth` | Easy |
+| XLSX | `xlsx` | Easy |
+| Images | GPT-4o / Claude vision | Requires multimodal model — extra cost |
+| Other (zip, exe) | Not supported | Skip |
+
+**Main constraint:** Large attachments (20-page PDF = ~50k tokens) blow past `max_tokens` and spike cost. Solution: summarize attachment text before passing to model, or truncate to first N characters.
+
+**Implementation plan (when ready):**
+1. Add `/api/ai/process-attachment` endpoint — accepts multipart file upload, returns extracted text
+2. content-script: detect `.aQH` elements (Gmail attachment container), add "Include attachment" checkbox to toolbar
+3. On generate: fetch attachment → POST to process-attachment → combine text with emailContent
+4. Add per-attachment size limit (e.g. 50KB extracted text max)
 
 ---
 
@@ -625,13 +670,13 @@ Break-even at $8/mo:   ~8 paying users
 
 1. **Gmail-only** — `.ii.gt` selector is Gmail-specific; Outlook not yet supported
 2. **Reply button selector** — uses Spanish aria-labels (`Responder`); may miss English Gmail
-3. **Daily limit inconsistency** — UI shows 20/day, background.js enforces 50
-4. **MutationObserver leak** — `emailObserver` never disconnects
-5. **No server-side rate limiting** — daily limit is soft, client-side only
-6. **CORS set to `*` by default** — must restrict to extension origin in production
-7. **No user authentication** — extension is anonymous
-8. **No extension icons** — directory missing entirely
-9. **detectSentiment not validated server-side** — OpenAI may return malformed JSON
+3. **MutationObserver leak** — `emailObserver` never disconnects
+4. **No server-side rate limiting** — daily limit is soft, client-side only
+5. **CORS set to `*` by default** — must restrict to extension origin in production
+6. **No user authentication** — extension is anonymous
+7. **No extension icons** — `extension/public/icons/` directory missing entirely
+8. **detectSentiment not validated server-side** — model may return malformed JSON
+9. **franc not in production image** — production backend will crash until Docker image is rebuilt
 
 ---
 

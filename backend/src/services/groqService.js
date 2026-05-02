@@ -6,7 +6,7 @@ const groq = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
 })
 
-const MODEL = 'llama-3.1-8b-instant'
+const MODEL = 'llama-3.3-70b-versatile'
 
 class GroqService {
   async generateEmailReply(emailContent, tone = 'formal', customPrompt = '', senderName = null, length = 'medium') {
@@ -14,7 +14,7 @@ class GroqService {
       const completion = await groq.chat.completions.create({
         model: MODEL,
         messages: [
-          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length) },
+          { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length, cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.7,
@@ -31,7 +31,7 @@ class GroqService {
       const completion = await groq.chat.completions.create({
         model: MODEL,
         messages: [
-          { role: 'system', content: buildSummarizePrompt() },
+          { role: 'system', content: buildSummarizePrompt(cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
         ],
         temperature: 0.5,
