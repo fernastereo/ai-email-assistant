@@ -2,7 +2,7 @@
 // UBICACIÓN: public/background.js
 //
 // ⚠️  CAMBIAR ESTA URL al hacer deploy a producción
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'https://api.replie.email';
 
 const FREE_DAILY_LIMIT = 20;
 

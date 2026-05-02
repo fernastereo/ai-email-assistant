@@ -3,6 +3,7 @@ const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const compression = require('compression')
+const { rateLimit } = require('express-rate-limit')
 require('dotenv').config()
 
 const aiRoutes = require('./routes/ai')
@@ -19,6 +20,15 @@ app.use(cors({
   credentials: true,
 }))
 
+const aiLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 horas
+  limit: 20,                       // 20 requests por IP por día
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { success: false, error: 'Daily limit exceeded. Maximum 20 requests per day.' },
+})
+
+app.use('/api/ai', aiLimiter)
 app.use('/api/ai', aiRoutes)
 
 app.get('/health', (req, res) => {

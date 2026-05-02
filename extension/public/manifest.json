@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Email Assistant",
+  "name": "Replie",
   "version": "1.0.0",
-  "description": "AI Email Assistant. Sugiere respuestas, resume emails, mejora la redacción y detecta el tono de tus emails.",
+  "description": "Replie — AI email assistant for Gmail. Generate smart replies, summarize emails and detect sentiment in one click.",
   "permissions": [
     "contextMenus",
     "tabs",

@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/ai'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.replie.email/api/ai'
 
 interface GenerateReplyResponse {
   success: boolean;
