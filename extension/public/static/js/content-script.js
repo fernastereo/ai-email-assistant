@@ -317,96 +317,287 @@ class EmailAssistantContent {
 }
 
 // Inicializar
+let emailAssistant;
 try {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      new EmailAssistantContent();
+      emailAssistant = new EmailAssistantContent();
     });
   } else {
-    new EmailAssistantContent();
+    emailAssistant = new EmailAssistantContent();
   }
 } catch (error) {
   console.error('❌ Error initializing AI Email Assistant:', error);
 }
 
-const waitForElement = (selector, callback) => {
-  const element = document.querySelector(selector);
-  if (element) {
-    callback(element);
-  } else {
-    const observer = new MutationObserver((mutations, obs) => {
-      const element = document.querySelector(selector);
-      if (element) {
-        callback(element);
-        obs.disconnect(); // Detiene la observación una vez encontrado
-      }
-    });
-    observer.observe(document, {
-      childList: true,
-      subtree: true
-    });
-  }
+// ============================================================
+// INLINE EMAIL TOOLBAR
+// Injects below each expanded email body when reading in Gmail.
+// Anchored to [data-message-id] containers — one toolbar per message.
+// Uses .ii.gt as content source (works for both plain text and HTML emails).
+// ============================================================
+
+// .ii.gt is Gmail's stable container for expanded email bodies (all types)
+const EMAIL_BODY_SELECTOR = '.ii.gt';
+
+// Tracked on the [data-message-id] container to guarantee one toolbar per message
+const injectedMessageContainers = new WeakSet();
+let cachedTone = 'formal';
+let cachedLength = 'medium';
+
+// Load persisted settings from storage
+chrome.storage.local.get(['settings'], (result) => {
+  if (result.settings?.defaultTone) cachedTone = result.settings.defaultTone;
+  if (result.settings?.defaultLength) cachedLength = result.settings.defaultLength;
+});
+
+function saveTone(tone) {
+  cachedTone = tone;
+  chrome.storage.local.get(['settings'], (result) => {
+    const settings = result.settings || {};
+    settings.defaultTone = tone;
+    chrome.storage.local.set({ settings });
+  });
 }
 
-const injectButtonToToolbar = (targetElement) => {
-  // Verificar si ya existe
-  const existing = document.getElementById('ai-email-assistant-btn-toolbar');
-  if (existing) {
-    existing.remove();
-  }
+// Returns a promise that resolves with the compose box element once it appears,
+// or null if it doesn't appear within the timeout.
+function waitForComposeBox(timeoutMs = 4000) {
+  const COMPOSE_SELECTOR = '[contenteditable="true"][role="textbox"]';
+  const existing = document.querySelector(COMPOSE_SELECTOR);
+  if (existing) return Promise.resolve(existing);
 
-  const container = document.createElement('div');
-  container.className = 'Xa ao4 bSyoAf Xr'
-  container.style.cssText = `
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      const el = document.querySelector(COMPOSE_SELECTOR);
+      if (el) { observer.disconnect(); resolve(el); }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => { observer.disconnect(); resolve(null); }, timeoutMs);
+  });
+}
+
+function makeBtn(text, bgColor) {
+  const btn = document.createElement('button');
+  btn.textContent = text;
+  btn.style.cssText = `
+    font-size: 12px !important;
+    padding: 5px 12px !important;
+    background: ${bgColor} !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
     cursor: pointer !important;
-  `
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    transition: opacity 0.15s !important;
+  `;
+  btn.addEventListener('mouseenter', () => { btn.style.opacity = '0.85'; });
+  btn.addEventListener('mouseleave', () => { btn.style.opacity = '1'; });
+  return btn;
+}
 
-  const replieIcon = document.createElement('span');
-  replieIcon.innerHTML = '🤖';
-  replieIcon.style.cssText = `
-    padding: 5px 0;
-    font-size: 1.2rem !important;
-    transition: all 0.3s !important;
-  `
-  replieIcon.addEventListener('mouseenter', () => {
-    replieIcon.style.transform = 'scale(1.2)';
-    replieIcon.style.color = 'blue'; // Cambia el color al resaltar
+// Entry point: receives a .ii.gt element, resolves to its [data-message-id] container
+function injectReplieEmailToolbar(emailBodyEl) {
+  // Walk up to the message container ([data-message-id])
+  const messageContainer = emailBodyEl.closest('[data-message-id]');
+  if (!messageContainer) return;
+
+  // One toolbar per message container, regardless of how many .ii.gt children exist
+  if (injectedMessageContainers.has(messageContainer)) return;
+
+  const emailContent = emailBodyEl.innerText.trim();
+  if (!emailContent || emailContent.length < 20) return;
+
+  injectedMessageContainers.add(messageContainer);
+
+  // Extract sender name from Gmail DOM (.gD is the sender name span)
+  const senderName = messageContainer.querySelector('.gD')?.getAttribute('name')
+    || messageContainer.querySelector('.gD')?.innerText?.trim()
+    || null;
+
+  // ── Wrapper ──────────────────────────────────────────────
+  const wrapper = document.createElement('div');
+  wrapper.className = 'replie-email-toolbar';
+  wrapper.style.cssText = `
+    margin-top: 12px !important;
+    border-top: 1px solid #e0e0e0 !important;
+    padding-top: 10px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 13px !important;
+  `;
+
+  // ── Action row ────────────────────────────────────────────
+  const actionRow = document.createElement('div');
+  actionRow.style.cssText = 'display: flex !important; align-items: center !important; gap: 8px !important; flex-wrap: wrap !important;';
+
+  // Brand
+  const brand = document.createElement('span');
+  brand.style.cssText = 'font-weight: 700 !important; color: #1a73e8 !important; font-size: 12px !important; margin-right: 4px !important;';
+  brand.textContent = '✨ Replie';
+
+  // Tone selector
+  const toneSelect = document.createElement('select');
+  toneSelect.style.cssText = `
+    font-size: 12px !important;
+    padding: 4px 6px !important;
+    border: 1px solid #dadce0 !important;
+    border-radius: 4px !important;
+    background: white !important;
+    color: #3c4043 !important;
+    cursor: pointer !important;
+    outline: none !important;
+  `;
+  [
+    { value: 'formal',     label: '📄 Formal' },
+    { value: 'casual',     label: '😊 Casual' },
+    { value: 'concise',    label: '⚡ Conciso' },
+    { value: 'persuasive', label: '🎯 Persuasivo' },
+  ].forEach(({ value, label }) => {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = label;
+    if (value === cachedTone) opt.selected = true;
+    toneSelect.appendChild(opt);
   });
-  
-  replieIcon.addEventListener('mouseleave', () => {
-    replieIcon.style.transform = 'scale(1)';
-    replieIcon.style.color = 'initial'; // Restablece el color
-  });
+  toneSelect.addEventListener('change', () => saveTone(toneSelect.value));
 
-  const replieButton = document.createElement('div');
-  replieButton.className = 'apW';
-  replieButton.innerText = 'Replie';
+  const replyBtn    = makeBtn('↩ Generar respuesta', '#1a73e8');
+  const summarizeBtn = makeBtn('📄 Resumir', '#188038');
 
-  container.appendChild(replieIcon);
-  container.appendChild(replieButton);
+  // Status line
+  const statusEl = document.createElement('span');
+  statusEl.style.cssText = 'font-size: 12px !important; color: #5f6368 !important;';
 
-  container.addEventListener('click', (e) => {
+  // Results area (hidden by default, shown after summarize)
+  const resultsArea = document.createElement('div');
+  resultsArea.style.cssText = `
+    display: none !important;
+    margin-top: 10px !important;
+    padding: 10px 12px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    color: #202124 !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+  `;
+
+  const setStatus = (msg, color = '#5f6368', timeout = 4000) => {
+    statusEl.textContent = msg;
+    statusEl.style.color = color + ' !important';
+    if (timeout) setTimeout(() => { statusEl.textContent = ''; }, timeout);
+  };
+
+  const setLoading = (btn, originalText, loading) => {
+    btn.disabled = loading;
+    btn.style.opacity = loading ? '0.6' : '1';
+    btn.textContent = loading ? 'Procesando...' : originalText;
+  };
+
+  // ── Generate Reply ─────────────────────────────────────────
+  replyBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    handleReplyButtonClick();
+
+    const emailContent = emailBodyEl.innerText.trim().substring(0, 3000);
+    if (!emailContent) { setStatus('⚠️ No se encontró contenido', '#d93025'); return; }
+
+    setLoading(replyBtn, '↩ Generar respuesta', true);
+    statusEl.textContent = '';
+    resultsArea.style.display = 'none';
+
+    // Click Gmail's reply button to open the compose box
+    const replyButton = messageContainer.querySelector(
+      '[data-tooltip*="Responder"], [aria-label*="Responder"], [aria-label*="Reply"], [data-tooltip*="Reply"]'
+    );
+    if (replyButton) replyButton.click();
+
+    // Wait for compose box then call API in parallel
+    const [composeBox, apiResponse] = await Promise.all([
+      waitForComposeBox(4000),
+      new Promise((resolve) => {
+        chrome.runtime.sendMessage(
+          { type: 'GENERATE_REPLY', data: { emailContent, tone: toneSelect.value, senderName, length: cachedLength } },
+          resolve
+        );
+      })
+    ]);
+
+    setLoading(replyBtn, '↩ Generar respuesta', false);
+
+    if (!apiResponse?.success || !apiResponse.reply) {
+      setStatus(`❌ ${apiResponse?.error || 'Error al generar'}`, '#d93025', 5000);
+      return;
+    }
+
+    if (composeBox && emailAssistant) {
+      emailAssistant.setTextInEditor(composeBox, apiResponse.reply);
+      setStatus('✅ Respuesta generada', '#137333');
+    } else {
+      // Compose box didn't open — show result in results area as fallback
+      resultsArea.style.display = 'block';
+      resultsArea.textContent = apiResponse.reply;
+      setStatus('✅ Reply listo (abre el compose para insertar)', '#137333', 0);
+    }
   });
 
-  targetElement.appendChild(container);
-}
+  // ── Summarize ──────────────────────────────────────────────
+  summarizeBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-const handleReplyButtonClick = async () => {
-  console.log('🤖 AI Reply button clicked');
-  chrome.runtime.sendMessage({ type: 'OPEN_SIDE_PANEL' });
-}
+    const emailContent = emailBodyEl.innerText.trim().substring(0, 3000);
+    if (!emailContent) { setStatus('⚠️ No se encontró contenido', '#d93025'); return; }
 
-window.addEventListener('load', () => {
-  new EmailAssistantContent();
-  waitForElement('.aeN.WR.a6o.anZ.baA.nH.oy8Mbf', (element) => {
-    // Aquí inyectas tu botón o elemento
-    injectButtonToToolbar(element);
+    setLoading(summarizeBtn, '📄 Resumir', true);
+    statusEl.textContent = '';
+    resultsArea.style.display = 'none';
+
+    chrome.runtime.sendMessage(
+      { type: 'SUMMARIZE_EMAIL', data: { emailContent } },
+      (response) => {
+        setLoading(summarizeBtn, '📄 Resumir', false);
+        if (response?.success && response.summary) {
+          resultsArea.style.display = 'block';
+          resultsArea.textContent = response.summary;
+        } else {
+          setStatus(`❌ ${response?.error || 'Error al resumir'}`, '#d93025', 5000);
+        }
+      }
+    );
   });
+
+  actionRow.appendChild(brand);
+  actionRow.appendChild(toneSelect);
+  actionRow.appendChild(replyBtn);
+  actionRow.appendChild(summarizeBtn);
+  actionRow.appendChild(statusEl);
+
+  wrapper.appendChild(actionRow);
+  wrapper.appendChild(resultsArea);
+
+  // Insert after .ii.gt inside the message container
+  emailBodyEl.insertAdjacentElement('afterend', wrapper);
+  console.log('✅ Replie toolbar injected for message:', messageContainer.dataset.messageId);
+}
+
+function checkNodeForEmail(node) {
+  if (node.nodeType !== Node.ELEMENT_NODE) return;
+  try {
+    if (node.matches && node.matches(EMAIL_BODY_SELECTOR)) injectReplieEmailToolbar(node);
+    node.querySelectorAll(EMAIL_BODY_SELECTOR).forEach(injectReplieEmailToolbar);
+  } catch (_) {}
+}
+
+const emailObserver = new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    mutation.addedNodes.forEach(checkNodeForEmail);
+  }
 });
+
+emailObserver.observe(document.body, { childList: true, subtree: true });
+
+// Check for email bodies already in the DOM on load
+document.querySelectorAll(EMAIL_BODY_SELECTOR).forEach(injectReplieEmailToolbar);

@@ -1,15 +1,18 @@
 const OpenAI = require('openai')
 const { cleanEmailContent, buildReplyPrompt, buildSummarizePrompt, buildSentimentPrompt } = require('./emailPrompts')
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const groq = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
 })
 
-class OpenAIService {
+const MODEL = 'llama-3.3-70b-versatile'
+
+class GroqService {
   async generateEmailReply(emailContent, tone = 'formal', customPrompt = '', senderName = null, length = 'medium') {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await groq.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildReplyPrompt(tone, customPrompt, senderName, length, cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -25,8 +28,8 @@ class OpenAIService {
 
   async summarizeEmail(emailContent) {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await groq.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildSummarizePrompt(cleanEmailContent(emailContent)) },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -42,8 +45,8 @@ class OpenAIService {
 
   async detectSentiment(emailContent) {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+      const completion = await groq.chat.completions.create({
+        model: MODEL,
         messages: [
           { role: 'system', content: buildSentimentPrompt() },
           { role: 'user', content: cleanEmailContent(emailContent) },
@@ -58,4 +61,4 @@ class OpenAIService {
   }
 }
 
-module.exports = new OpenAIService()
+module.exports = new GroqService()

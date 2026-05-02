@@ -6,7 +6,6 @@
   "permissions": [
     "contextMenus",
     "tabs",
-    "sidePanel",
     "activeTab",
     "storage",
     "scripting",
@@ -39,12 +38,9 @@
     "default_popup": "index.html",
     "default_title": "AI Email Assistant"
   },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
   "web_accessible_resources": [
     {
-      "resources": ["sidepanel.html", "assets/*"],
+      "resources": ["assets/*"],
       "matches": ["https://mail.google.com/*"]
     }
   ]
