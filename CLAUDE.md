@@ -454,42 +454,69 @@ No tests               ← jest configured but 0 test files exist
 
 ## WORK PLAN — Ordered by priority
 
-### Phase 1 — Make it work end-to-end (next sessions)
+### Infrastructure & CI/CD ✅ COMPLETED (2026-05-02)
 
-| # | Task | File(s) |
-|---|------|---------|
-| 1 | Fix API endpoint paths in background.js | `background.js` |
-| 2 | Fix sidepanel.html script reference | `sidepanel.html` |
-| 3 | Wire sidebar to real API (replace mock setTimeout) | `sidebar/sidebar.tsx` |
-| 4 | Implement popup button handlers | `popup.tsx` |
-| 5 | Implement Copy + Insert button handlers in sidebar | `sidebar/sidebar.tsx` |
-| 6 | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
-| 7 | Deploy backend to Digital Ocean App Platform | Docker + DO |
-| 8 | Get real extension ID → update CORS_ORIGIN | `.env` on server |
+| Status | Task |
+|--------|------|
+| ✅ | Dockerize backend (multi-stage, non-root, healthcheck) |
+| ✅ | Add Caddy as reverse proxy container (SSL automático) |
+| ✅ | Add PostgreSQL container |
+| ✅ | Deploy backend to Digital Ocean Droplet ($12/mes, NY3) |
+| ✅ | `api.replie.email` live with SSL via Let's Encrypt |
+| ✅ | GitHub Actions — `landing.yml` (build + FTP deploy, path filter) |
+| ✅ | GitHub Actions — `backend.yml` (build Docker + push ghcr.io + SSH deploy) |
+| ✅ | Move workflows from `landing/.github` to repo root `.github` |
+| ✅ | `workflow_dispatch` for manual deploys |
+
+### Phase 1 — Make the extension work end-to-end
+
+| # | Status | Task | File(s) |
+|---|--------|------|---------|
+| 1 | ✅ | Fix API endpoint paths in background.js | `background.js` |
+| 2 | ✅ | Fix sidepanel.html script reference | N/A — Vite handles it correctly |
+| 3 | ✅ | Wire sidebar to real API (replace mock setTimeout) | `sidebar/sidebar.tsx` |
+| 4 | ⬜ | Implement popup button handlers | `popup.tsx` |
+| 5 | ✅ | Implement Copy + Insert button handlers in sidebar | `sidebar/sidebar.tsx` |
+| 6 | ⬜ | Create extension icons (16, 48, 128px PNG) | `extension/public/icons/` |
+| 7 | ⬜ | Update CORS_ORIGIN with real extension ID | `.env` on server |
+| 8 | ⬜ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/` |
 
 ### Phase 2 — Make it work well
 
-| # | Task | Notes |
-|---|------|-------|
-| 9 | Options/settings page | `options.html` + chrome.storage wiring |
-| 10 | Server-side rate limiting | `express-rate-limit` in backend |
-| 11 | Parse + validate detectSentiment JSON response | `openaiService.js` + controller |
-| 12 | Error boundaries in React | Prevent full crash on JS error |
-| 13 | Retry logic in ApiService | Currently fails on first error |
-| 14 | Fix MutationObserver memory leak | `content-script.js` |
-| 15 | Persist tone/settings across sessions | `chrome.storage.local` integration |
-| 16 | Real usage count shown in sidebar UI | Wire to background.js storage |
+| # | Status | Task | Notes |
+|---|--------|------|-------|
+| 9 | ⬜ | Options/settings page | `options.html` + chrome.storage wiring |
+| 10 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
+| 11 | ⬜ | Parse + validate detectSentiment JSON response | `openaiService.js` + controller |
+| 12 | ⬜ | Error boundaries in React | Prevent full crash on JS error |
+| 13 | ⬜ | Retry logic in ApiService | Currently fails on first error |
+| 14 | ⬜ | Fix MutationObserver memory leak | `content-script.js` |
+| 15 | ⬜ | Persist tone/settings across sessions | `chrome.storage.local` integration |
+| 16 | ⬜ | Real usage count shown in sidebar UI | Wire to background.js storage |
+
+### Phase 2b — Landing page fixes (critical before real traffic)
+
+| # | Status | Task | Notes |
+|---|--------|------|-------|
+| L1 | ⬜ | Rotate Firebase API key | Firebase Console |
+| L2 | ⬜ | Configure Firestore security rules | Write-only from client |
+| L3 | ⬜ | Integrate email service (Resend) | Confirmation emails not implemented |
+| L4 | ⬜ | Add GDPR cookie consent banner | Legal requirement for EU users |
+| L5 | ⬜ | Fix broken footer links (Twitter, GitHub, Help Center) | All `href="#"` |
+| L6 | ⬜ | Fix `TOAST_REMOVE_DELAY` bug (1000000ms → 5000ms) | `use-toast.ts` |
+| L7 | ⬜ | Make "30+ early users" count dynamic from Firestore | `hero-section.tsx` |
+| L8 | ⬜ | Replace `og:image` with own hosted image | `index.html` |
 
 ### Phase 3 — Monetization (after Phase 1 + 2)
 
-| # | Task | Notes |
-|---|------|-------|
-| 17 | Authentication system | Clerk or Auth0 recommended |
-| 18 | Database for users + usage | Supabase (PostgreSQL) |
-| 19 | Stripe payment integration | Freemium model |
-| 20 | Rate limiting per plan tier | Backend middleware |
-| 21 | Publish to Chrome Web Store | $5 one-time fee, 1-5 day review |
-| 22 | Publish to Edge Add-ons | Free, same extension package |
+| # | Status | Task | Notes |
+|---|--------|------|-------|
+| 17 | ⬜ | Authentication system | Clerk or Auth0 recommended |
+| 18 | ⬜ | Database schema for users + usage | PostgreSQL already running on DO |
+| 19 | ⬜ | Stripe payment integration | Freemium model |
+| 20 | ⬜ | Rate limiting per plan tier | Backend middleware |
+| 21 | ⬜ | Publish to Chrome Web Store | $5 one-time fee, 1-5 day review |
+| 22 | ⬜ | Publish to Edge Add-ons | Free, same extension package |
 
 ### Phase 4 — Growth features
 

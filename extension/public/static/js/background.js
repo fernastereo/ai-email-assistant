@@ -1,5 +1,8 @@
 // background.js - Service Worker de la extensión
 // UBICACIÓN: public/background.js
+//
+// ⚠️  CAMBIAR ESTA URL al hacer deploy a producción
+const API_BASE_URL = 'http://localhost:3001';
 
 // Instalar extensión
 chrome.runtime.onInstalled.addListener(() => {
@@ -10,7 +13,7 @@ chrome.runtime.onInstalled.addListener(() => {
     settings: {
       defaultTone: 'formal',
       language: 'es',
-      apiUrl: 'http://localhost:3001/api',
+      apiUrl: API_BASE_URL,
       autoDetectEmails: true
     },
     usage: {
@@ -56,11 +59,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleAnalyzeSentiment(message.data).then(sendResponse);
       return true;
       
+    case 'GET_EMAIL_CONTENT':
+      getEmailContentFromTab().then(sendResponse);
+      return true;
+
+    case 'INSERT_REPLY':
+      insertReplyInTab(message.data).then(sendResponse);
+      return true;
+
     case 'OPEN_OPTIONS':
       chrome.runtime.openOptionsPage();
       sendResponse({ success: true });
       break;
-    
+
     case 'OPEN_SIDE_PANEL':
       chrome.sidePanel.open({ windowId: sender.tab.windowId });
       sendResponse({ success: true });
@@ -122,10 +133,10 @@ async function makeAPIRequest(endpoint, data) {
   try {
     // Obtener configuración
     const settingsResult = await getSettings();
-    const apiUrl = settingsResult.settings?.apiUrl || 'http://localhost:3001/api';
-    
+    const apiUrl = settingsResult.settings?.apiUrl || API_BASE_URL;
+
     console.log('Making API request to:', `${apiUrl}${endpoint}`);
-    
+
     const response = await fetch(`${apiUrl}${endpoint}`, {
       method: 'POST',
       headers: { 
@@ -149,18 +160,24 @@ async function makeAPIRequest(endpoint, data) {
   }
 }
 
+// Verificar límite diario sin incrementar
+async function checkDailyLimit() {
+  const result = await chrome.storage.local.get(['usage']);
+  const today = new Date().toDateString();
+  const usage = result.usage || { requestsToday: 0, lastReset: today };
+  if (usage.lastReset !== today) return false; // reset day, allow
+  return usage.requestsToday >= 50;
+}
+
 // Manejar generación de respuesta
 async function handleGenerateReply(data) {
   try {
-    // Verificar límite diario
-    const usageResult = await trackUsage();
-    if (usageResult.usage && usageResult.usage.requestsToday > 50) {
+    if (await checkDailyLimit()) {
       return { success: false, error: 'Daily limit exceeded (50 requests)' };
     }
-    
     const result = await makeAPIRequest('/api/ai/generate-reply', data);
+    await trackUsage(); // solo cuenta si el request fue exitoso
     return { success: true, ...result };
-    
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -169,14 +186,12 @@ async function handleGenerateReply(data) {
 // Manejar resumen de email
 async function handleSummarizeEmail(data) {
   try {
-    const usageResult = await trackUsage();
-    if (usageResult.usage && usageResult.usage.requestsToday > 50) {
-      return { success: false, error: 'Daily limit exceeded' };
+    if (await checkDailyLimit()) {
+      return { success: false, error: 'Daily limit exceeded (50 requests)' };
     }
-    
     const result = await makeAPIRequest('/api/ai/summarize-email', data);
+    await trackUsage();
     return { success: true, ...result };
-    
   } catch (error) {
     return { success: false, error: error.message };
   }
@@ -185,14 +200,36 @@ async function handleSummarizeEmail(data) {
 // Manejar análisis de sentimiento
 async function handleAnalyzeSentiment(data) {
   try {
-    const usageResult = await trackUsage();
-    if (usageResult.usage && usageResult.usage.requestsToday > 50) {
-      return { success: false, error: 'Daily limit exceeded' };
+    if (await checkDailyLimit()) {
+      return { success: false, error: 'Daily limit exceeded (50 requests)' };
     }
-    
     const result = await makeAPIRequest('/api/ai/detect-sentiment', data);
+    await trackUsage();
     return { success: true, ...result };
-    
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Obtener contenido del email desde el content script de la pestaña activa
+async function getEmailContentFromTab() {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return { success: false, error: 'No active tab' };
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'GET_EMAIL_CONTENT' });
+    return response;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Insertar respuesta en el compose box via content script
+async function insertReplyInTab(data) {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.id) return { success: false, error: 'No active tab' };
+    const response = await chrome.tabs.sendMessage(tab.id, { type: 'INSERT_REPLY', reply: data.reply });
+    return response;
   } catch (error) {
     return { success: false, error: error.message };
   }
