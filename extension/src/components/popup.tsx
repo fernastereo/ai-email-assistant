@@ -101,7 +101,7 @@ export const Popup = () => {
           <div className="flex items-center justify-between">
             <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Uso hoy
+              Usage today
             </Label>
             <span className="text-xs font-medium" style={{ color: usageColor }}>
               {requestsToday} / {dailyLimit}
@@ -120,7 +120,7 @@ export const Popup = () => {
         {/* Default tone */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">
-            Tono por defecto
+            Default tone
           </Label>
           <Select value={defaultTone} onValueChange={handleToneChange}>
             <SelectTrigger className="h-8 text-xs">
@@ -135,7 +135,7 @@ export const Popup = () => {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Se aplica al toolbar en el compose de Gmail.
+            Applied to the toolbar in the Gmail compose.
           </p>
         </div>
 
@@ -144,7 +144,7 @@ export const Popup = () => {
         {/* Default length */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">
-            Longitud de respuesta
+            Response length
           </Label>
           <Select value={defaultLength} onValueChange={handleLengthChange}>
             <SelectTrigger className="h-8 text-xs">
@@ -170,7 +170,7 @@ export const Popup = () => {
           onClick={handleOpenGmail}
         >
           <ExternalLink className="w-4 h-4 mr-2" />
-          Abrir Gmail
+          Open Gmail
         </Button>
       </div>
     </Card>
