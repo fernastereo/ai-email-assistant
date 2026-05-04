@@ -462,8 +462,8 @@ function injectReplieEmailToolbar(emailBodyEl) {
   });
   toneSelect.addEventListener('change', () => saveTone(toneSelect.value));
 
-  const replyBtn    = makeBtn('↩ Generar respuesta', '#1a73e8');
-  const summarizeBtn = makeBtn('📄 Resumir', '#188038');
+  const replyBtn    = makeBtn('↩ Generate response', '#1a73e8');
+  const summarizeBtn = makeBtn('📄 Summarize', '#188038');
 
   // Status line
   const statusEl = document.createElement('span');
