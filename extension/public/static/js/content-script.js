@@ -345,6 +345,12 @@ const injectedMessageContainers = new WeakSet();
 let cachedTone = 'formal';
 let cachedLength = 'medium';
 
+// Returns false when the extension context is invalidated (e.g. extension reloaded while tab open).
+// In that case chrome.runtime becomes undefined and any sendMessage call throws.
+function isChromeContextValid() {
+  try { return !!chrome.runtime?.id; } catch { return false; }
+}
+
 // Load persisted settings from storage
 chrome.storage.local.get(['settings'], (result) => {
   if (result.settings?.defaultTone) cachedTone = result.settings.defaultTone;
@@ -514,6 +520,12 @@ function injectReplieEmailToolbar(emailBodyEl) {
     );
     if (replyButton) replyButton.click();
 
+    if (!isChromeContextValid()) {
+      setLoading(replyBtn, '↩ Generar respuesta', false);
+      setStatus('⚠️ Recarga la página para usar Replie', '#d93025', 0);
+      return;
+    }
+
     // Wait for compose box then call API in parallel
     const [composeBox, apiResponse] = await Promise.all([
       waitForComposeBox(4000),
@@ -555,6 +567,12 @@ function injectReplieEmailToolbar(emailBodyEl) {
     statusEl.textContent = '';
     resultsArea.style.display = 'none';
 
+    if (!isChromeContextValid()) {
+      setLoading(summarizeBtn, '📄 Resumir', false);
+      setStatus('⚠️ Recarga la página para usar Replie', '#d93025', 0);
+      return;
+    }
+
     chrome.runtime.sendMessage(
       { type: 'SUMMARIZE_EMAIL', data: { emailContent } },
       (response) => {
@@ -592,12 +610,21 @@ function checkNodeForEmail(node) {
 }
 
 const emailObserver = new MutationObserver((mutations) => {
+  // If extension context is invalidated (e.g. extension updated while tab open), stop observing
+  try {
+    if (!chrome.runtime?.id) { emailObserver.disconnect(); return; }
+  } catch {
+    emailObserver.disconnect(); return;
+  }
   for (const mutation of mutations) {
     mutation.addedNodes.forEach(checkNodeForEmail);
   }
 });
 
 emailObserver.observe(document.body, { childList: true, subtree: true });
+
+// Disconnect on page unload to release resources
+window.addEventListener('beforeunload', () => emailObserver.disconnect(), { once: true });
 
 // Check for email bodies already in the DOM on load
 document.querySelectorAll(EMAIL_BODY_SELECTOR).forEach(injectReplieEmailToolbar);

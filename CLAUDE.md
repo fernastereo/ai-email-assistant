@@ -535,7 +535,7 @@ Manifest references `/icons/icon48.png` but the `/icons/` directory doesn't exis
 ## TECHNICAL DEBT
 
 ```
-content-script.js      ← emailObserver (MutationObserver) never disconnects (memory leak)
+content-script.js      ← emailObserver — fixed: disconnect en beforeunload + extensión huérfana
 content-script.js      ← .ii.gt selector is Gmail-specific; Outlook not yet supported
 content-script.js      ← reply button selector includes Spanish aria-labels only (Responder)
 No tests               ← jest configured but 0 test files exist
@@ -588,7 +588,7 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 | 4 | ✅ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/extension.yml` |
 | 5 | ✅ | Server-side rate limiting | `express-rate-limit` en `app.js` — 20 req/día por IP |
 | 6 | ✅ | Validate detectSentiment JSON server-side | `aiController.js` — parse + valida campos + devuelve objeto |
-| 7 | ⬜ | Fix MutationObserver memory leak | `content-script.js` — `emailObserver` never disconnects |
+| 7 | ✅ | Fix MutationObserver memory leak | `content-script.js` — disconnect en `beforeunload` y cuando el contexto de la extensión se invalida |
 | 8 | ⬜ | Error boundaries in React popup | Prevent full popup crash on JS error |
 
 ### Phase 2b — Landing page fixes (critical before real traffic)
