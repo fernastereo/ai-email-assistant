@@ -586,8 +586,8 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 | 2 | ✅ | Update CORS_ORIGIN with real extension ID | `.env` on server |
 | 3 | ✅ | Rebuild production Docker image with franc | Triggered via GitHub Actions |
 | 4 | ✅ | GitHub Actions — `extension.yml` (build + zip artifact) | `.github/workflows/extension.yml` |
-| 5 | ⬜ | Server-side rate limiting | `express-rate-limit` in backend |
-| 6 | ⬜ | Validate detectSentiment JSON server-side | `aiController.js` — parse + re-serialize before returning |
+| 5 | ✅ | Server-side rate limiting | `express-rate-limit` en `app.js` — 20 req/día por IP |
+| 6 | ✅ | Validate detectSentiment JSON server-side | `aiController.js` — parse + valida campos + devuelve objeto |
 | 7 | ⬜ | Fix MutationObserver memory leak | `content-script.js` — `emailObserver` never disconnects |
 | 8 | ⬜ | Error boundaries in React popup | Prevent full popup crash on JS error |
 
