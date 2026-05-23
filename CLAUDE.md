@@ -589,7 +589,7 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 | 5 | ✅ | Server-side rate limiting | `express-rate-limit` en `app.js` — 20 req/día por IP |
 | 6 | ✅ | Validate detectSentiment JSON server-side | `aiController.js` — parse + valida campos + devuelve objeto |
 | 7 | ✅ | Fix MutationObserver memory leak | `content-script.js` — disconnect en `beforeunload` y cuando el contexto de la extensión se invalida |
-| 8 | ⬜ | Error boundaries in React popup | Prevent full popup crash on JS error |
+| 8 | ✅ | Error boundaries in React popup | `App.tsx` — ErrorBoundary class con fallback + botón Retry |
 
 ### Phase 2b — Landing page fixes (critical before real traffic)
 
