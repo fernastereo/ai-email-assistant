@@ -8,8 +8,8 @@ export interface WaitlistUser {
   paymentStatus: 'pending' | 'completed' | 'failed';
   transactionId?: string;
   amount?: string;
-  createdAt: any; // Firestore timestamp
-  updatedAt: any; // Firestore timestamp
+  createdAt: ReturnType<typeof serverTimestamp> | Date;
+  updatedAt: ReturnType<typeof serverTimestamp> | Date;
 }
 
 export class WaitlistService {
