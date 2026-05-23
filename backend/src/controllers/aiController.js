@@ -51,11 +51,24 @@ class AIController {
         return res.status(400).json({ error: 'Email content is required' })
       }
 
-      const analysis = await openaiService.detectSentiment(emailContent)
+      const raw = await openaiService.detectSentiment(emailContent)
+
+      let parsed
+      try {
+        parsed = JSON.parse(raw)
+      } catch {
+        console.error('Sentiment JSON parse failed:', raw)
+        return res.status(500).json({ error: 'Invalid JSON from AI model' })
+      }
+
+      if (!parsed.sentiment || !parsed.urgency || !parsed.tone) {
+        console.error('Incomplete sentiment response:', parsed)
+        return res.status(500).json({ error: 'Incomplete sentiment analysis from AI model' })
+      }
 
       res.json({
         success: true,
-        analysis,
+        analysis: parsed,
         timestamp: new Date().toISOString()
       })
     } catch (error) {
