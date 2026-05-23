@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /waitlist/{docId} {
+      // Allow new signups from the landing page form
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'paymentStatus'])
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.email is string
+                    && request.resource.data.email.matches('.*@.*\\..*')
+                    && request.resource.data.paymentStatus == 'pending';
+
+      // Allow payment completion update (PayPal callback sets paymentStatus + payerId)
+      allow update: if request.resource.data.paymentStatus == 'completed'
+                    && request.resource.data.keys().hasAll(['payerId', 'transactionId', 'updatedAt']);
+
+      // No client-side reads or deletes — use Firebase Admin SDK (backend) for those
+      allow read, delete: if false;
+    }
+
+    // Block all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

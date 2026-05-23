@@ -595,8 +595,8 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 
 | # | Status | Task | Notes |
 |---|--------|------|-------|
-| L1 | ⬜ | Rotate Firebase API key | Firebase Console |
-| L2 | ⬜ | Configure Firestore security rules | Write-only from client |
+| L1 | ✅ | Rotate Firebase API key | Firebase Console |
+| L2 | ✅ | Configure Firestore security rules | Write-only from client — reglas en `landing/firestore.rules` |
 | L3 | ⬜ | Integrate email service (Resend) | Confirmation emails not implemented |
 | L4 | ⬜ | Add GDPR cookie consent banner | Legal requirement for EU users |
 | L5 | ⬜ | Fix broken footer links (Twitter, GitHub, Help Center) | All `href="#"` |
