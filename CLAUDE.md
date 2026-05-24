@@ -598,9 +598,9 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 | L1 | ✅ | Rotate Firebase API key | Firebase Console |
 | L2 | ✅ | Configure Firestore security rules | Write-only from client — reglas en `landing/firestore.rules` |
 | L3 | ⬜ | Integrate email service (Resend) | Confirmation emails not implemented |
-| L4 | ⬜ | Add GDPR cookie consent banner | Legal requirement for EU users |
+| L4 | ✅ | Add GDPR cookie consent banner | `cookie-consent.tsx` + gateado en `App.tsx` con localStorage |
 | L5 | ⬜ | Fix broken footer links (Twitter, GitHub, Help Center) | All `href="#"` |
-| L6 | ⬜ | Fix `TOAST_REMOVE_DELAY` bug (1000000ms → 5000ms) | `use-toast.ts` |
+| L6 | ✅ | Fix `TOAST_REMOVE_DELAY` bug (1000000ms → 5000ms) | `use-toast.ts` |
 | L7 | ⬜ | Make "30+ early users" count dynamic from Firestore | `hero-section.tsx` |
 | L8 | ⬜ | Replace `og:image` with own hosted image | `index.html` |
 
