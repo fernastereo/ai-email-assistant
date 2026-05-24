@@ -7,11 +7,13 @@ const { rateLimit } = require('express-rate-limit')
 require('dotenv').config()
 
 const aiRoutes = require('./routes/ai')
+const { clerkAuth } = require('./middlewares/auth')
 
 const app = express()
 
 app.use(helmet())
 app.use(compression())
+app.use(clerkAuth)
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(cors({

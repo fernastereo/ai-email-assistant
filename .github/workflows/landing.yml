@@ -50,6 +50,7 @@ jobs:
           VITE_APP_FIREBASE_APP_ID: ${{ secrets.LANDING_FIREBASE_APP_ID }}
           VITE_APP_MEASUREMENT_ID: ${{ secrets.LANDING_MEASUREMENT_ID }}
           VITE_APP_ENV: production
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
 
   # ── Deploy en push a master o PR mergeado ────────────────────
   deploy:
@@ -84,6 +85,7 @@ jobs:
           VITE_APP_FIREBASE_APP_ID: ${{ secrets.LANDING_FIREBASE_APP_ID }}
           VITE_APP_MEASUREMENT_ID: ${{ secrets.LANDING_MEASUREMENT_ID }}
           VITE_APP_ENV: production
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
 
       - name: 🚀 Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

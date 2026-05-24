@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./ui/language-selector";
 import { analytics, logEvent, isProduction } from "@/lib/firebaseConfig";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 
 export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -60,11 +61,22 @@ export const Header = () => {
           {/* Desktop CTA */}
           <div className='hidden md:flex items-center gap-4'>
             <LanguageSelector className="w-[140px]" />
-            <Button
-              variant='cta'
-              onClick={() => handleWaitlistClick('cta_desktop')}>
-              {t('header.waitlist')}
-            </Button>
+            <SignedOut>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => window.location.href = '/sign-in'}>
+                Login
+              </Button>
+              <Button
+                variant='cta'
+                onClick={() => handleWaitlistClick('cta_desktop')}>
+                {t('header.waitlist')}
+              </Button>
+            </SignedOut>
+            <SignedIn>
+              <UserButton afterSignOutUrl="/" />
+            </SignedIn>
           </div>
 
           {/* Mobile Menu Button */}

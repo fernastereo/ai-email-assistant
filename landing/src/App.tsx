@@ -3,14 +3,19 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { ClerkProvider } from "@clerk/clerk-react";
 import Index from "./pages/Index";
 import Thanks from "./pages/Thanks";
 import Privacy from "./pages/Privacy";
+import SignIn from "./pages/SignIn";
+import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import { analytics, logEvent, isProduction } from "./lib/firebaseConfig";
 import { useState, useEffect } from "react";
 import { CookieConsent, getStoredConsent } from "./components/cookie-consent";
 import type { ConsentValue } from "./components/cookie-consent";
+
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const queryClient = new QueryClient();
 
@@ -40,23 +45,27 @@ const App = () => {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AnalyticsListener analyticsEnabled={analyticsEnabled} />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/thanks" element={<Thanks />} />
-            <Route path="/privacy" element={<Privacy />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        <CookieConsent onConsent={handleConsent} />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AnalyticsListener analyticsEnabled={analyticsEnabled} />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/thanks" element={<Thanks />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/sign-in/*" element={<SignIn />} />
+              <Route path="/sign-up/*" element={<SignUp />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          <CookieConsent onConsent={handleConsent} />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 };
 
