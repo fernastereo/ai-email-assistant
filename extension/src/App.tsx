@@ -1,6 +1,18 @@
 import { Component } from "react"
 import type { ReactNode } from "react"
+import { ClerkProvider, useUser, useAuth } from "@clerk/chrome-extension"
 import { Popup } from "./components/popup"
+import type { AuthProps } from "./components/popup"
+
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+const NO_AUTH: AuthProps = { isSignedIn: false, user: null, getToken: () => Promise.resolve(null) }
+
+function PopupWithAuth() {
+  const { user, isSignedIn } = useUser()
+  const { getToken } = useAuth()
+  return <Popup auth={{ isSignedIn: !!isSignedIn, user: user ?? null, getToken }} />
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null }
@@ -31,10 +43,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 }
 
 function App() {
+  if (!PUBLISHABLE_KEY) {
+    return (
+      <ErrorBoundary>
+        <Popup auth={NO_AUTH} />
+      </ErrorBoundary>
+    )
+  }
+
   return (
-    <ErrorBoundary>
-      <Popup />
-    </ErrorBoundary>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY} syncHost="https://replie.email">
+      <ErrorBoundary>
+        <PopupWithAuth />
+      </ErrorBoundary>
+    </ClerkProvider>
   )
 }
 
