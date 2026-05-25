@@ -3,8 +3,15 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Bot, ExternalLink, Clock } from "lucide-react";
+import { Bot, ExternalLink, Clock, LogIn } from "lucide-react";
 import { useState, useEffect } from "react";
+import { UserButton } from "@clerk/chrome-extension";
+
+export interface AuthProps {
+  isSignedIn: boolean
+  user: { primaryEmailAddress?: { emailAddress: string } | null } | null
+  getToken: () => Promise<string | null>
+}
 
 const DEFAULT_DAILY_LIMIT = 20;
 
@@ -21,31 +28,52 @@ const LENGTHS = [
   { value: 'long',   label: '▪▪▪ Larga' },
 ];
 
-export const Popup = () => {
+export const Popup = ({ auth }: { auth: AuthProps }) => {
+  const { user, isSignedIn, getToken } = auth;
   const [requestsToday, setRequestsToday] = useState(0);
   const [dailyLimit, setDailyLimit] = useState(DEFAULT_DAILY_LIMIT);
   const [defaultTone, setDefaultTone] = useState('formal');
   const [defaultLength, setDefaultLength] = useState('medium');
+  const [syncedEmail, setSyncedEmail] = useState<string | null>(null);
+  const [syncedIn, setSyncedIn] = useState(false);
+
+  const signedIn = isSignedIn || syncedIn;
+  const displayEmail = user?.primaryEmailAddress?.emailAddress ?? syncedEmail;
+
+  // Sync JWT to chrome.storage so background.js can attach it to API requests
+  useEffect(() => {
+    if (isSignedIn) {
+      getToken().then((token) => {
+        if (token) chrome.storage.local.set({ authToken: token });
+      });
+    }
+  }, [isSignedIn, getToken]);
 
   useEffect(() => {
-    const loadFromStorage = () => {
-      chrome.storage.local.get(['usage', 'settings'], (result) => {
-        const usage = result.usage as { requestsToday?: number } | undefined;
-        const settings = result.settings as { defaultTone?: string; defaultLength?: string; dailyLimit?: number } | undefined;
-        if (usage?.requestsToday != null) setRequestsToday(usage.requestsToday);
-        if (settings?.defaultTone) setDefaultTone(settings.defaultTone);
-        if (settings?.defaultLength) setDefaultLength(settings.defaultLength);
-        if (settings?.dailyLimit != null) setDailyLimit(settings.dailyLimit);
-      });
-    };
+    chrome.storage.local.get(['usage', 'settings', 'authToken', 'authEmail'], (result) => {
+      const usage = result.usage as { requestsToday?: number } | undefined;
+      const settings = result.settings as { defaultTone?: string; defaultLength?: string; dailyLimit?: number } | undefined;
+      if (usage?.requestsToday != null) setRequestsToday(usage.requestsToday);
+      if (settings?.defaultTone) setDefaultTone(settings.defaultTone);
+      if (settings?.defaultLength) setDefaultLength(settings.defaultLength);
+      if (settings?.dailyLimit != null) setDailyLimit(settings.dailyLimit);
+      if (result.authToken) {
+        setSyncedIn(true);
+        setSyncedEmail((result.authEmail as string | undefined) ?? null);
+      }
+    });
 
-    loadFromStorage();
-
-    // Keep usage count in sync if storage changes while popup is open
     const onStorageChanged = (changes: Record<string, chrome.storage.StorageChange>) => {
       const newUsage = changes.usage?.newValue as { requestsToday?: number } | undefined;
-      if (newUsage?.requestsToday != null) {
-        setRequestsToday(newUsage.requestsToday);
+      if (newUsage?.requestsToday != null) setRequestsToday(newUsage.requestsToday);
+
+      if ('authToken' in changes) {
+        const token = changes.authToken?.newValue as string | undefined;
+        setSyncedIn(!!token);
+        if (!token) setSyncedEmail(null);
+      }
+      if ('authEmail' in changes) {
+        setSyncedEmail((changes.authEmail?.newValue as string | undefined) ?? null);
       }
     };
     chrome.storage.onChanged.addListener(onStorageChanged);
@@ -82,14 +110,33 @@ export const Popup = () => {
     <Card className="w-72 bg-ai-surface border-border shadow-lg">
       {/* Header */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
-            <Bot className="w-4 h-4" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
+              <Bot className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-sm text-foreground">Replie</h2>
+              {signedIn
+                ? <p className="text-xs text-muted-foreground">{displayEmail}</p>
+                : <p className="text-xs text-muted-foreground">AI Email Assistant</p>
+              }
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-sm text-foreground">Replie</h2>
-            <p className="text-xs text-muted-foreground">AI Email Assistant</p>
-          </div>
+          {isSignedIn
+            ? <UserButton />
+            : signedIn
+              ? <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => chrome.tabs.create({ url: 'https://replie.email' })}>
+                  <LogIn className="w-3 h-3" />
+                  Account
+                </Button>
+              : <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => chrome.tabs.create({ url: 'https://replie.email/sign-in' })}>
+                  <LogIn className="w-3 h-3" />
+                  Login
+                </Button>
+          }
         </div>
       </div>
 

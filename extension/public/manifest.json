@@ -9,10 +9,13 @@
     "activeTab",
     "storage",
     "scripting",
-    "notifications"
+    "notifications",
+    "cookies"
   ],
   "host_permissions": [
     "http://localhost:3001/*",
+    "http://localhost:8080/*",
+    "https://replie.email/*",
     "https://api.replie.email/*",
     "https://mail.google.com/*",
     "https://outlook.live.com/*",
@@ -25,13 +28,22 @@
   "content_scripts": [
     {
       "matches": [
-        "https://mail.google.com/*", 
-        "https://outlook.live.com/*", 
+        "https://mail.google.com/*",
+        "https://outlook.live.com/*",
         "https://outlook.office.com/*"
       ],
       "js": ["static/js/content-script.js"],
       "css": ["static/css/content-styles.css"],
       "type": "module"
+    },
+    {
+      "matches": [
+        "https://replie.email/*",
+        "http://localhost:8080/*",
+        "http://localhost:5173/*"
+      ],
+      "js": ["static/js/landing-bridge.js"],
+      "run_at": "document_idle"
     }
   ],
   "icons": {

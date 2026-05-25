@@ -80,6 +80,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       insertReplyInTab(message.data).then(sendResponse);
       return true;
 
+    case 'CLERK_SESSION_SYNC':
+      chrome.storage.local.set({ authToken: message.token, authEmail: message.email });
+      sendResponse({ success: true });
+      break;
+
+    case 'CLERK_SESSION_CLEAR':
+      chrome.storage.local.remove(['authToken', 'authEmail']);
+      sendResponse({ success: true });
+      break;
+
     case 'OPEN_OPTIONS':
       chrome.runtime.openOptionsPage();
       sendResponse({ success: true });
@@ -139,18 +149,25 @@ async function trackUsage() {
 // Hacer request al backend
 async function makeAPIRequest(endpoint, data) {
   try {
-    // Obtener configuración
-    const settingsResult = await getSettings();
+    // Obtener configuración y token de auth
+    const [settingsResult, storageResult] = await Promise.all([
+      getSettings(),
+      chrome.storage.local.get(['authToken'])
+    ]);
     const apiUrl = settingsResult.settings?.apiUrl || API_BASE_URL;
+    const authToken = storageResult.authToken;
 
     console.log('Making API request to:', `${apiUrl}${endpoint}`);
 
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+    };
+
     const response = await fetch(`${apiUrl}${endpoint}`, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers,
       body: JSON.stringify(data)
     });
     

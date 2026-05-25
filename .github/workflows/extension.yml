@@ -43,6 +43,8 @@ jobs:
       - name: 🏗️ Build
         working-directory: extension
         run: npm run build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
 
   # ── Build y empaquetado del zip ───────────────────────────────
   build:
@@ -71,6 +73,8 @@ jobs:
       - name: 🏗️ Build
         working-directory: extension
         run: npm run build
+        env:
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
 
       - name: 📦 Package extension as zip
         run: |

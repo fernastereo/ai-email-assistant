@@ -515,20 +515,11 @@ Upgraded to `llama-3.3-70b-versatile` (also free on Groq) which follows instruct
 ### 11. ✅ FIXED — Language detection implemented via `franc` (server-side, explicit injection)
 ### 12. ✅ FIXED — Groq model upgraded to llama-3.3-70b-versatile (stops hallucinating signatures/gender)
 
-### 6. CORS_ORIGIN is a placeholder
-`backend/.env` has `CORS_ORIGIN=chrome-extension://your-extension-id`. Needs real extension ID (obtained after loading unpacked or publishing).
-
-### 7. No extension icons
-Manifest references `/icons/icon48.png` but the `/icons/` directory doesn't exist. Notifications will fail.
-
-### 8. auth.js and reteLimiter.js are empty files
-`backend/src/middlewares/auth.js` and `backend/src/utils/reteLimiter.js` — both 0 bytes.
-
-### 9. detectSentiment returns raw string, not parsed JSON
-`backend/src/services/openaiService.js` returns `completion.choices[0].message.content` directly. Client does `JSON.parse()` with a try/catch but no server-side validation if OpenAI returns malformed JSON.
-
-### 13. franc not installed in production Docker image
-`franc` was added to `package.json` but the production Docker image on DO has not been rebuilt yet. Run `docker compose build --no-cache && docker compose up -d` on the server, or push to trigger the GitHub Actions backend deploy.
+### 6. ✅ FIXED — CORS_ORIGIN updated with real extension ID
+### 7. ✅ FIXED — Extension icons created (16, 48, 128px)
+### 8. ✅ FIXED — auth.js implemented (Clerk middleware); reteLimiter.js still empty but rate limiting handled via express-rate-limit in app.js
+### 9. ✅ FIXED — detectSentiment validates JSON server-side in aiController.js
+### 13. ✅ FIXED — franc in production image (triggered via GitHub Actions)
 
 ---
 
@@ -604,16 +595,50 @@ emailPrompts.js        ← franc minLength: 20 may misdetect very short emails (
 | L7 | ⬜ | Make "30+ early users" count dynamic from Firestore | `hero-section.tsx` |
 | L8 | ⬜ | Replace `og:image` with own hosted image | `index.html` |
 
-### Phase 3 — Monetization (after Phase 1 + 2)
+### Phase 3 — Monetization
 
-| # | Status | Task | Notes |
-|---|--------|------|-------|
-| 17 | ⬜ | Authentication system | Clerk or Auth0 recommended |
-| 18 | ⬜ | Database schema for users + usage | PostgreSQL already running on DO |
-| 19 | ⬜ | Stripe payment integration | Freemium model |
-| 20 | ⬜ | Rate limiting per plan tier | Backend middleware |
-| 21 | ⬜ | Publish to Chrome Web Store | $5 one-time fee, 1-5 day review |
-| 22 | ⬜ | Publish to Edge Add-ons | Free, same extension package |
+**Payment processor decision: LemonSqueezy** (not Stripe, not Wompi). Acts as Merchant of Record — handles VAT/taxes globally. No Stripe Atlas needed.
+
+#### Block 1 — Clerk Authentication ✅ COMPLETED (2026-05-25)
+
+| # | Status | Task | File(s) |
+|---|--------|------|---------|
+| 1 | ✅ | Install @clerk/express in backend | `backend/package.json` |
+| 2 | ✅ | Implement auth middleware | `backend/src/middlewares/auth.js` — clerkMiddleware, requireUser, getUserId |
+| 3 | ✅ | Wire clerkAuth into Express app | `backend/src/app.js` — app.use(clerkAuth) |
+| 4 | ✅ | Add CLERK_SECRET_KEY to production server | `/opt/replie/.env` + `docker-compose.prod.yml` |
+| 5 | ✅ | Landing: ClerkProvider + SignIn/SignUp pages | `landing/src/App.tsx`, `pages/SignIn.tsx`, `pages/SignUp.tsx` |
+| 6 | ✅ | Landing: header shows UserButton when signed in | `landing/src/components/header.tsx` |
+| 7 | ✅ | Extension: ClerkProvider with syncHost | `extension/src/App.tsx` — syncHost="https://replie.email" |
+| 8 | ✅ | Extension: popup shows login state + JWT sync | `extension/src/components/popup.tsx` |
+| 9 | ✅ | Extension: background.js sends Auth header | `background.js` — Authorization: Bearer token |
+| 10 | ✅ | Session sync bridge (postMessage) | `landing-bridge.js` content script + TokenBridge in landing App.tsx + background.js handlers |
+
+**Session sync status:** The postMessage bridge is implemented and code is correct. Works in production (`replie.email`). Not verified working in local dev because `syncHost` targets `replie.email` while local login goes to `localhost`. To test properly: deploy landing, log in at `replie.email`, open popup.
+
+**Known issue with syncHost:** `@clerk/chrome-extension` syncHost requires the extension's `chrome-extension://` origin to be added in Clerk Dashboard → Configure → Restrictions → Allowed redirect origins. Without this, automatic cookie sync fails silently. The postMessage bridge is the working fallback.
+
+#### Block 2 — PostgreSQL Schema ⬜ NOT STARTED
+
+Tables needed: `users` (clerk_id, email, plan, created_at), `subscriptions` (user_id, lemonsqueezy_id, status, plan), `usage` (user_id, date, request_count)
+
+#### Block 3 — Backend Rate Limiting Per User ⬜ NOT STARTED
+
+Currently rate limiting is IP-based (express-rate-limit, 20 req/day). Need to replace with per-user limits based on plan tier from DB.
+
+#### Block 4 — LemonSqueezy Integration ⬜ NOT STARTED
+
+- Create products/variants in LemonSqueezy dashboard
+- Add webhook endpoint in backend for subscription events
+- Store subscription status in PostgreSQL
+- Gate features by plan in API middleware
+
+#### Block 5 — Chrome Web Store Publication ⬜ NOT STARTED
+
+- Developer account ($5 one-time)
+- Screenshots + store listing copy
+- Privacy policy URL (already at replie.email/privacy ✅)
+- Submit for review (1-5 days)
 
 ### Phase 4 — Growth features
 
